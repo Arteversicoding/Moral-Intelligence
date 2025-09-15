@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Moral Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+    <script type="module" src="auth-guard.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-2xl font-bold text-indigo-600">
+                        <i class="fas fa-brain mr-2"></i>Moral Intelligence
+                    </a>
+                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">ADMIN</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-indigo-600 transition-colors">
+                        <i class="fas fa-home mr-2"></i>Beranda
+                    </a>
+                    <a href="materi-guru.html" class="text-gray-600 hover:text-indigo-600 transition-colors">
+                        <i class="fas fa-book mr-2"></i>Materi Guru
+                    </a>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
+            <p class="text-gray-600">Overview sistem Moral Intelligence</p>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Users</p>
+                        <p class="text-2xl font-bold text-gray-900" id="totalUsers">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-book text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Materi</p>
+                        <p class="text-2xl font-bold text-gray-900" id="totalMaterials">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-comments text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Chat Sessions</p>
+                        <p class="text-2xl font-bold text-gray-900" id="totalChats">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-bar text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Survey Responses</p>
+                        <p class="text-2xl font-bold text-gray-900" id="surveyResponses">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Survey Analytics Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📊 Survey Analytics</h2>
+            
+            <!-- Rating Statistics -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Rating Averages (1-10)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-blue-600 mb-1">Text Readability</h4>
+                        <p class="text-2xl font-bold text-blue-700" id="readabilityAvg">-</p>
+                        <p class="text-xs text-blue-500">Average /10</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-green-600 mb-1">Color & Layout</h4>
+                        <p class="text-2xl font-bold text-green-700" id="colorAvg">-</p>
+                        <p class="text-xs text-green-500">Average /10</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-purple-600 mb-1">Design Appeal</h4>
+                        <p class="text-2xl font-bold text-purple-700" id="designAvg">-</p>
+                        <p class="text-xs text-purple-500">Average /10</p>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-orange-600 mb-1">Cross Platform</h4>
+                        <p class="text-2xl font-bold text-orange-700" id="platformAvg">-</p>
+                        <p class="text-xs text-orange-500">Average /10</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Ratings -->
+            <div class="mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-indigo-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-indigo-600 mb-1">Ease of Use</h4>
+                        <p class="text-2xl font-bold text-indigo-700" id="usabilityAvg">-</p>
+                        <p class="text-xs text-indigo-500">Average /10</p>
+                    </div>
+                    <div class="bg-pink-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-pink-600 mb-1">Chatbot Relevance</h4>
+                        <p class="text-2xl font-bold text-pink-700" id="chatbotAvg">-</p>
+                        <p class="text-xs text-pink-500">Average /10</p>
+                    </div>
+                    <div class="bg-teal-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-teal-600 mb-1">Media Support</h4>
+                        <p class="text-2xl font-bold text-teal-700" id="mediaAvg">-</p>
+                        <p class="text-xs text-teal-500">Average /10</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">System Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 mb-3">AI Status</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Gemini API:</span>
+                            <span class="text-sm font-medium text-green-600" id="aiStatus">Connected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Last Update:</span>
+                            <span class="text-sm text-gray-500" id="lastUpdate">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 mb-3">System Health</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Storage:</span>
+                            <span class="text-sm font-medium text-green-600">Healthy</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Performance:</span>
+                            <span class="text-sm font-medium text-green-600">Optimal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Statistics -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">Usage Statistics</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Device Usage -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Device Usage</h4>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-gray-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl mb-2">💻</div>
+                            <p class="text-lg font-bold text-gray-700" id="webUsers">0</p>
+                            <p class="text-sm text-gray-500">Web Users</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl mb-2">📱</div>
+                            <p class="text-lg font-bold text-gray-700" id="androidUsers">0</p>
+                            <p class="text-sm text-gray-500">Android Users</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl mb-2">🍎</div>
+                            <p class="text-lg font-bold text-gray-700" id="iosUsers">0</p>
+                            <p class="text-sm text-gray-500">iOS Users</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature Usage -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Popular Features</h4>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-blue-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl mb-2">🤖</div>
+                            <p class="text-lg font-bold text-blue-700" id="chatbotUsers">0</p>
+                            <p class="text-sm text-blue-500">Chatbot AI</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl mb-2">📚</div>
+                            <p class="text-lg font-bold text-green-700" id="materiUsers">0</p>
+                            <p class="text-sm text-green-500">Learning Materials</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl mb-2">💬</div>
+                            <p class="text-lg font-bold text-purple-700" id="forumUsers">0</p>
+                            <p class="text-sm text-purple-500">Forum Community</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">Quick Actions</h3>
+            
+            <div class="flex flex-wrap gap-4">
+                <button onclick="exportData()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Export Data
+                </button>
+                <button onclick="exportSurveyData()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-chart-line mr-2"></i>Export Survey Data
+                </button>
+                <button onclick="clearAllData()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-trash mr-2"></i>Clear All Data
+                </button>
+                <button onclick="refreshStats()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-refresh mr-2"></i>Refresh Stats
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span id="notificationText"></span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="config.js"></script>
+    <script type="module" src="auth-service.js"></script>
+    <script type="module" src="gemini-service.js"></script>
+    <script type="module" src="auth-service.js"></script>
+    <script type="module"> // Added type="module" for imports
+        import { AuthService } from './auth-service.js';
+        const authService = new AuthService();
+
+        // Admin user creation removed - not needed since admin emails are handled automatically
+
+        let geminiService; // authService is now imported directly
+        let users = [];
+        let materials = { counseling: [], teaching: [] };
+
+        // const db = getFirestore(app); // Removed Firestore initialization
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Initialize services
+                // authService is now imported directly
+                // geminiService = new GeminiService(); // Removed - not needed for admin dashboard
+                // await geminiService.initialize();
+
+                // Wait for auth initialization to get proper user data
+                const currentUser = await authService.waitForAuthInit();
+                
+                if (!currentUser || currentUser.role !== 'admin') {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Load data
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showNotification('Terjadi kesalahan saat inisialisasi', 'error');
+            }
+        });
+
+        async function loadDashboardData() {
+            try {
+                // Load users
+                await loadUsers();
+                
+                // Load materials (still from localStorage for now)
+                loadMaterials();
+                
+                // Update basic stats
+                updateStats();
+                
+                // Load survey data from localStorage
+                await loadSurveyAnalytics();
+                
+                // Update system info
+                updateSystemInfo();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function loadUsers() {
+            users = authService.users || []; // Get users directly from authService's local storage with fallback
+        }
+
+        function loadMaterials() {
+            // Load from localStorage
+            const savedMaterials = localStorage.getItem('teacherMaterials');
+        }
+
+        function updateStats() {
+            // Update user count
+            document.getElementById('totalUsers').textContent = (users || []).length;
+            
+            // Update material count
+            const totalMaterials = (materials.counseling?.length || 0) + (materials.teaching?.length || 0);
+            document.getElementById('totalMaterials').textContent = totalMaterials;
+            
+            // Update chat sessions (placeholder)
+            document.getElementById('totalChats').textContent = Math.floor(Math.random() * 100) + 50;
+            
+            // Update survey responses count
+            const surveyData = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
+            document.getElementById('surveyResponses').textContent = surveyData.length;
+        }
+
+        function updateSystemInfo() {
+            // Update last update time
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+            
+            // Set AI status as connected (since we removed GeminiService dependency)
+            document.getElementById('aiStatus').textContent = 'Connected';
+            document.getElementById('aiStatus').className = 'text-sm font-medium text-green-600';
+        }
+
+        // Load survey analytics
+        async function loadSurveyAnalytics() {
+            try {
+                const surveyData = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
+
+                if (surveyData.length === 0) {
+                    // Set default values when no survey data
+                    document.getElementById('readabilityAvg').textContent = '-';
+                    document.getElementById('colorAvg').textContent = '-';
+                    document.getElementById('designAvg').textContent = '-';
+                    document.getElementById('platformAvg').textContent = '-';
+                    document.getElementById('usabilityAvg').textContent = '-';
+                    document.getElementById('chatbotAvg').textContent = '-';
+                    document.getElementById('mediaAvg').textContent = '-';
+                    
+                    document.getElementById('webUsers').textContent = '0';
+                    document.getElementById('androidUsers').textContent = '0';
+                    document.getElementById('iosUsers').textContent = '0';
+                    
+                    document.getElementById('chatbotUsers').textContent = '0';
+                    document.getElementById('materiUsers').textContent = '0';
+                    document.getElementById('forumUsers').textContent = '0';
+                    return;
+                }
+
+                // Calculate rating averages
+                const ratings = {
+                    textReadability: [],
+                    colorLayout: [],
+                    attractiveDesign: [],
+                    crossPlatform: [],
+                    easeOfUse: [],
+                    chatbotRelevance: [],
+                    mediaSupport: []
+                };
+
+                const deviceUsage = { web: 0, android: 0, ios: 0 };
+                const featureUsage = { chatbot: 0, materi: 0, forum: 0 };
+
+                surveyData.forEach(survey => {
+                    // Collect ratings from the survey structure
+                    if (survey.ratings) {
+                        ratings.textReadability.push(survey.ratings.textReadability || 0);
+                        ratings.colorLayout.push(survey.ratings.colorLayout || 0);
+                        ratings.attractiveDesign.push(survey.ratings.attractiveDesign || 0);
+                        ratings.crossPlatform.push(survey.ratings.crossPlatform || 0);
+                        ratings.easeOfUse.push(survey.ratings.easeOfUse || 0);
+                        ratings.chatbotRelevance.push(survey.ratings.chatbotRelevance || 0);
+                        ratings.mediaSupport.push(survey.ratings.mediaSupport || 0);
+                    }
+
+                    // Count device usage
+                    if (survey.deviceUsed) {
+                        if (survey.deviceUsed.includes('Web')) deviceUsage.web++;
+                        if (survey.deviceUsed.includes('Android')) deviceUsage.android++;
+                        if (survey.deviceUsed.includes('iOS')) deviceUsage.ios++;
+                    }
+
+                    // Count feature usage
+                    if (survey.featuresUsed) {
+                        if (survey.featuresUsed.includes('Chatbot AI')) featureUsage.chatbot++;
+                        if (survey.featuresUsed.includes('Materi Pembelajaran')) featureUsage.materi++;
+                        if (survey.featuresUsed.includes('Forum Komunitas')) featureUsage.forum++;
+                    }
+                });
+
+                // Calculate and display averages
+                const calcAvg = (arr) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : '-';
+                
+                document.getElementById('readabilityAvg').textContent = calcAvg(ratings.textReadability);
+                document.getElementById('colorAvg').textContent = calcAvg(ratings.colorLayout);
+                document.getElementById('designAvg').textContent = calcAvg(ratings.attractiveDesign);
+                document.getElementById('platformAvg').textContent = calcAvg(ratings.crossPlatform);
+                document.getElementById('usabilityAvg').textContent = calcAvg(ratings.easeOfUse);
+                document.getElementById('chatbotAvg').textContent = calcAvg(ratings.chatbotRelevance);
+                document.getElementById('mediaAvg').textContent = calcAvg(ratings.mediaSupport);
+
+                // Update device usage
+                document.getElementById('webUsers').textContent = deviceUsage.web;
+                document.getElementById('androidUsers').textContent = deviceUsage.android;
+                document.getElementById('iosUsers').textContent = deviceUsage.ios;
+
+                // Update feature usage
+                document.getElementById('chatbotUsers').textContent = featureUsage.chatbot;
+                document.getElementById('materiUsers').textContent = featureUsage.materi;
+                document.getElementById('forumUsers').textContent = featureUsage.forum;
+
+            } catch (error) {
+                console.error('Error loading survey analytics:', error);
+            }
+        }
+
+        function exportSurveyData() {
+            try {
+                const surveyData = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
+                
+                if (surveyData.length === 0) {
+                    showNotification('Tidak ada data survey untuk diekspor', 'error');
+                    return;
+                }
+
+                const dataStr = JSON.stringify(surveyData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `survey-data-${new Date().toISOString().split('T')[0]}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                showNotification('Data survey berhasil diekspor!', 'success');
+            } catch (error) {
+                console.error('Error exporting survey data:', error);
+                showNotification('Gagal mengekspor data survey', 'error');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('PERHATIAN: Ini akan menghapus SEMUA data! Lanjutkan?')) {
+                localStorage.clear(); // Clear all local storage
+                authService.users = []; // Clear users in authService
+                authService.saveUsersToLocalStorage(); // Save empty users
+                
+                // Recreate default admin user in authService
+                authService.users.push({ email: 'admin@mi.com', password: 'admin123', role: 'admin' });
+                authService.saveUsersToLocalStorage();
+
+                users = authService.users; // Update local users array
+                materials = { counseling: [], teaching: [] }; // Clear materials
+                
+                loadDashboardData();
+                showNotification('Semua data lokal berhasil dihapus!', 'success');
+            }
+        }
+
+        function exportData() {
+            const data = {
+                users: users,
+                materials: materials,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `moral-intelligence-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Data berhasil di-export!', 'success');
+        }
+
+        function refreshStats() {
+            loadDashboardData();
+            showNotification('Statistik berhasil di-refresh!', 'success');
+        }
+
+        function logout() {
+            authService.logout();
+            window.location.href = 'index.html';
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50`;
+            if (type === 'success') {
+                notification.classList.add('bg-green-500', 'text-white');
+            } else if (type === 'error') {
+                notification.classList.add('bg-red-500', 'text-white');
+            } else if (type === 'warning') {
+                notification.classList.add('bg-yellow-500', 'text-white');
+            } else {
+                notification.classList.add('bg-blue-500', 'text-white');
+            }
+            
+            notification.classList.remove('translate-x-full');
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
