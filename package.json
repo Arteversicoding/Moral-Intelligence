@@ -38,10 +38,6 @@
   },
   "homepage": "https://moral-intelligence.web.app",
   "dependencies": {
-    "@supabase/auth-js": "^2.71.1",
-    "@supabase/functions-js": "^2.4.6",
-    "@supabase/storage-js": "^2.12.1",
-    "@supabase/supabase-js": "^2.57.4",
     "dotenv": "^17.2.2"
   }
 }

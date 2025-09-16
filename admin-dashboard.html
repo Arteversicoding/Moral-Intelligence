@@ -338,17 +338,11 @@
         </div>
     </div>
 
-    <!-- Load Supabase from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Scripts -->
     <script type="module">
         // Import local modules
         import { AuthService } from './auth-service.js';
         import { MaterialsService } from './materials-service.js';
-        import { supabase } from './supabase-config.js';
-        
-        // Debug: Log Supabase client
-        console.log('Supabase client in admin-dashboard:', supabase);
         
         // Initialize services and variables
         const authService = new AuthService();

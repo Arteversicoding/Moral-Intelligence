@@ -1,51 +1,28 @@
-// Using global Supabase client from CDN
-const supabase = window.supabaseClient;
+// Base API URL - Update this with your actual API endpoint
+const API_BASE_URL = '/api';
 
 export class MaterialsService {
-    static BUCKET_NAME = 'materials';
-    static TABLE_NAME = 'materials';
-
     static async uploadFile(file, path = '') {
         try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-            const filePath = path ? `${path}/${fileName}` : fileName;
+            const formData = new FormData();
+            formData.append('file', file);
+            if (path) formData.append('path', path);
 
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('User not authenticated');
+            const response = await fetch(`${API_BASE_URL}/materials/upload`, {
+                method: 'POST',
+                body: formData,
+                // Add authentication token if needed
+                // headers: {
+                //     'Authorization': `Bearer ${getAuthToken()}`
+                // }
+            });
 
-            // Upload file
-            const { error: uploadError } = await supabase.storage
-                .from(this.BUCKET_NAME)
-                .upload(filePath, file);
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to upload file');
+            }
 
-            if (uploadError) throw uploadError;
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from(this.BUCKET_NAME)
-                .getPublicUrl(filePath);
-
-            // Save to database
-            const materialData = {
-                title: file.name,
-                description: '',
-                file_path: filePath,
-                file_url: publicUrl,
-                file_type: file.type,
-                file_size: file.size,
-                user_id: user.id
-            };
-
-            const { data, error: dbError } = await supabase
-                .from(this.TABLE_NAME)
-                .insert([materialData])
-                .select()
-                .single();
-
-            if (dbError) throw dbError;
-            return data;
+            return await response.json();
 
         } catch (error) {
             console.error('Error in uploadFile:', error);
@@ -55,135 +32,111 @@ export class MaterialsService {
 
     static async getMaterials(searchTerm = '') {
         try {
-            let query = supabase
-                .from(this.TABLE_NAME)
-                .select('*')
-                .order('created_at', { ascending: false });
-
+            const url = new URL(`${API_BASE_URL}/materials`);
             if (searchTerm) {
-                query = query.ilike('title', `%${searchTerm}%`);
+                url.searchParams.append('search', searchTerm);
             }
 
-            const { data, error } = await query;
-            if (error) throw error;
+            const response = await fetch(url, {
+                // Add authentication token if needed
+                // headers: {
+                //     'Authorization': `Bearer ${getAuthToken()}`
+                // }
+            });
 
-            return data || [];
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to fetch materials');
+            }
+
+            return await response.json();
         } catch (error) {
-            console.error('Error getting materials:', error);
+            console.error('Error in getMaterials:', error);
             throw error;
         }
     }
 
     static async getMaterialById(id) {
         try {
-            const { data, error } = await supabase
-                .from(this.TABLE_NAME)
-                .select('*')
-                .eq('id', id)
-                .single();
+            const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+                // Add authentication token if needed
+                // headers: {
+                //     'Authorization': `Bearer ${getAuthToken()}`
+                // }
+            });
 
-            if (error) throw error;
-            return data;
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to fetch material');
+            }
+
+            return await response.json();
         } catch (error) {
-            console.error('Error getting material by ID:', error);
+            console.error('Error in getMaterialById:', error);
             throw error;
         }
     }
 
     static async updateMaterial(id, updates) {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('User not authenticated');
+            const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify(updates)
+            });
 
-            // Only allow updating certain fields
-            const allowedUpdates = ['title', 'description', 'is_featured', 'category'];
-            const validUpdates = Object.keys(updates)
-                .filter(key => allowedUpdates.includes(key))
-                .reduce((obj, key) => {
-                    obj[key] = updates[key];
-                    return obj;
-                }, {});
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to update material');
+            }
 
-            const { data, error } = await supabase
-                .from(this.TABLE_NAME)
-                .update(validUpdates)
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
+            return await response.json();
         } catch (error) {
-            console.error('Error updating material:', error);
+            console.error('Error in updateMaterial:', error);
             throw error;
         }
     }
 
     static async deleteMaterial(id) {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('User not authenticated');
+            const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+                method: 'DELETE',
+                // headers: {
+                //     'Authorization': `Bearer ${getAuthToken()}`
+                // }
+            });
 
-            // Get material first to check ownership
-            const { data: material, error: fetchError } = await supabase
-                .from(this.TABLE_NAME)
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (fetchError) throw fetchError;
-
-            // Check if user is the owner or admin
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            if (material.user_id !== currentUser.id) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('is_admin')
-                    .eq('id', currentUser.id)
-                    .single();
-                
-                if (!profile?.is_admin) {
-                    throw new Error('Unauthorized: You can only delete your own materials');
-                }
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to delete material');
             }
 
-            // Delete file from storage if it exists
-            if (material.file_path) {
-                const { error: deleteError } = await supabase.storage
-                    .from(this.BUCKET_NAME)
-                    .remove([material.file_path]);
-
-                if (deleteError) {
-                    console.warn('Error deleting file from storage:', deleteError);
-                }
-            }
-
-            // Delete from database
-            const { error: deleteError } = await supabase
-                .from(this.TABLE_NAME)
-                .delete()
-                .eq('id', id);
-
-            if (deleteError) throw deleteError;
             return true;
         } catch (error) {
-            console.error('Error deleting material:', error);
+            console.error('Error in deleteMaterial:', error);
             throw error;
         }
     }
 
     static async getMaterialsByUser(userId) {
         try {
-            const { data, error } = await supabase
-                .from(this.TABLE_NAME)
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/materials`, {
+                // headers: {
+                //     'Authorization': `Bearer ${getAuthToken()}`
+                // }
+            });
 
-            if (error) throw error;
-            return data || [];
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to fetch user materials');
+            }
+
+            return await response.json();
         } catch (error) {
-            console.error('Error getting user materials:', error);
+            console.error('Error in getMaterialsByUser:', error);
             throw error;
         }
     }

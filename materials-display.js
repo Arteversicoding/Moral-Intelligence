@@ -1,5 +1,4 @@
 import { MaterialsService } from './materials-service.js';
-import { supabase } from './supabase-config.js';
 
 export class MaterialsDisplay {
     static init() {
@@ -245,7 +244,8 @@ export class MaterialsDisplay {
     static getFileUrl(path) {
         if (!path) return '#';
         if (path.startsWith('http')) return path;
-        return supabase.storage.from(MaterialsService.BUCKET_NAME).getPublicUrl(path).data.publicUrl;
+        // Return path as is or implement your own URL construction logic
+        return path;
     }
 
     static formatFileSize(bytes) {
