@@ -1,6 +1,7 @@
 {
   "name": "moral-intelligence",
   "version": "1.0.0",
+  "type": "module",
   "description": "Platform panduan bijak untuk pendidik dengan AI Gemini",
   "main": "index.html",
   "scripts": {
@@ -20,9 +21,11 @@
   "author": "Moral Intelligence Team",
   "license": "MIT",
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "autoprefixer": "^10.4.21",
+    "live-server": "^1.2.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=14.0.0"
   },
@@ -33,5 +36,12 @@
   "bugs": {
     "url": "https://github.com/your-username/moral-intelligence/issues"
   },
-  "homepage": "https://moral-intelligence.web.app"
+  "homepage": "https://moral-intelligence.web.app",
+  "dependencies": {
+    "@supabase/auth-js": "^2.71.1",
+    "@supabase/functions-js": "^2.4.6",
+    "@supabase/storage-js": "^2.12.1",
+    "@supabase/supabase-js": "^2.57.4",
+    "dotenv": "^17.2.2"
+  }
 }
