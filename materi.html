@@ -85,7 +85,7 @@
             </a>
             <a href="chat.html" data-page="chat" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span class="text-xs font-medium">Chat</span>
+                <span class="text-xs font-medium">Quiz</span>
             </a>
             <a href="forum.html" data-page="forum" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -113,5 +113,61 @@
         document.addEventListener('DOMContentLoaded', setActiveNav);
     </script>
     <script src="materi-search.js" defer></script>
+
+    <script type="module">
+        import { supabase } from './supabase.js';
+      
+        async function loadMateri() {
+          console.log("📥 Mulai ambil daftar file dari bucket Mobile-Intelligence...");
+      
+          const { data, error } = await supabase
+            .storage
+            .from('Mobile-Intelligence') // ← bucket kamu
+            .list('materi', { limit: 100 });
+      
+          if (error) {
+            console.error("❌ Gagal ambil file:", error.message);
+            return;
+          }
+      
+          console.log("✅ Daftar file dari bucket:", data);
+      
+          const materiList = document.getElementById('materi-list');
+          materiList.innerHTML = '<h3 class="text-lg font-bold text-gray-800">📚 Semua Materi</h3>';
+      
+          for (const file of data) {
+            console.log("📄 File ditemukan:", file.name);
+      
+            const { data: { publicUrl } } = supabase
+                .storage
+                .from('Mobile-Intelligence')
+                .getPublicUrl(`materi/${file.name}`);
+
+            console.log("🌍 Public URL:", publicUrl);
+
+            const div = document.createElement('div');
+            const downloadUrl = `${publicUrl}?download=${encodeURIComponent(file.name)}&response-content-disposition=attachment`;
+            div.className = "bg-white rounded-2xl p-5 shadow-lg";
+            div.innerHTML = `
+            <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                📘
+                </div>
+                <div>
+                <h4 class="font-semibold text-gray-800 mb-1">${file.name}</h4>
+                <a href="${downloadUrl}" 
+                    download="${file.name}"
+                    class="inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                    Unduh Materi
+                </a>
+                </div>
+            </div>
+            `;
+            materiList.appendChild(div);
+          }
+        }
+      
+        document.addEventListener("DOMContentLoaded", loadMateri);
+      </script>      
 </body>
 </html>

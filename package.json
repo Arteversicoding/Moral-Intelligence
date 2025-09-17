@@ -20,9 +20,11 @@
   "author": "Moral Intelligence Team",
   "license": "MIT",
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "autoprefixer": "^10.4.21",
+    "live-server": "^1.2.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=14.0.0"
   },
