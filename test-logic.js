@@ -1044,128 +1044,79 @@ function capitalize(str) {
 
 async function exportToWord() {
     try {
-        const { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, Table, TableRow, TableCell, WidthType } = docx;
-        const now = new Date();
-        
-        // Dapatkan hasil kuis
         const results = calculateFinalResults();
         const overallScore = Math.round(results.overallScore);
         const scoreCategory = getScoreCategory(overallScore);
         
-        // Buat dokumen
-        const doc = new Document({
-            styles: {
-                default: {
-                    document: {
-                        run: {
-                            font: "Arial",
-                            size: 24, // 12pt
-                        },
-                    },
-                },
-            },
-            sections: [{
-                properties: {},
-                children: [
-                    // Header
-                    new Paragraph({
-                        text: "LAPORAN HASIL TES KECERDASAN MORAL",
-                        heading: HeadingLevel.HEADING_1,
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 200 },
-                    }),
-                    
-                    // Informasi Tes
-                    new Paragraph({
-                        text: `Tanggal: ${now.toLocaleDateString('id-ID', { 
-                            day: '2-digit', 
-                            month: 'long', 
-                            year: 'numeric' 
-                        })}`,
-                        spacing: { after: 100 }
-                    }),
-                    
-                    // Skor Keseluruhan
-                    new Paragraph({
-                        text: "Skor Keseluruhan",
-                        heading: HeadingLevel.HEADING_2,
-                    }),
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: `${overallScore} - ${scoreCategory}`,
-                                bold: true,
-                                size: 28,
-                                color: getCategoryColor(aspectCategory).replace('#', '') || '000000'
-                            })
-                        ],
-                        spacing: { after: 200 }
-                    }),
-                    
-                    // Interpretasi Skor
-                    new Paragraph({
-                        text: getScoreInterpretation(overallScore),
-                        spacing: { after: 200 }
-                    }),
-                    
-                    // Hasil Detail
-                    new Paragraph({
-                        text: "Hasil Detail",
-                        heading: HeadingLevel.HEADING_2,
-                        spacing: { before: 200, after: 100 }
-                    }),
-                    
-                    // Tabel Hasil
-                    new Table({
-                        width: { size: 100, type: WidthType.PERCENTAGE },
-                        rows: [
-                            // Header
-                            new TableRow({
-                                children: [
-                                    new TableCell({ children: [new Paragraph("Aspek")], width: { size: 60, type: WidthType.PERCENTAGE } }),
-                                    new TableCell({ children: [new Paragraph("Skor")], width: { size: 20, type: WidthType.PERCENTAGE } }),
-                                    new TableCell({ children: [new Paragraph("Kategori")], width: { size: 20, type: WidthType.PERCENTAGE } })
-                                ]
-                            }),
-                            // Data
-                            ...Object.entries(results.aspects).map(([aspect, score]) => {
-                                const aspectScore = Math.round(score);
-                                const aspectCategory = getScoreCategory(aspectScore);
-                                return new TableRow({
-                                    children: [
-                                        new TableCell({ children: [new Paragraph(capitalize(aspect))] }),
-                                        new TableCell({ children: [new Paragraph(aspectScore.toString())] }),
-                                        new TableCell({ 
-                                            children: [new Paragraph({
-                                                text: aspectCategory,
-                                                color: getCategoryColor(aspectCategory).replace('#', '')
-                                            })]
-                                        })
-                                    ]
-                                });
-                            })
-                        ]
-                    })
-                ]
-            }]
+        // Prepare data for the backend
+        const exportData = {
+            overallScore: overallScore,
+            scoreCategory: scoreCategory,
+            scoreInterpretation: getScoreInterpretation(overallScore),
+            aspects: {},
+            aspectCategories: {}
+        };
+
+        // Add aspect scores and categories
+        Object.entries(results.aspects).forEach(([aspect, score]) => {
+            exportData.aspects[aspect] = score;
+            exportData.aspectCategories[aspect] = getScoreCategory(score);
         });
 
-        // Generate dan download
-        const blob = await Packer.toBlob(doc);
-        const url = URL.createObjectURL(blob);
+        // Show loading state
+        const exportBtn = document.getElementById('export-word-btn');
+        const originalText = exportBtn.innerHTML;
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat Dokumen...';
+
+        // Send data to Python backend
+        const response = await fetch('http://localhost:8000/api/export-word', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(exportData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Get the blob and create download link
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Hasil_Tes_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.docx`;
+        
+        // Get filename from content-disposition header or use default
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `Hasil_Tes_${new Date().getTime()}.docx`;
+        
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch != null && filenameMatch[1]) { 
+                filename = filenameMatch[1].replace(/['"]/g, '');
+            }
+        }
+        
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 100);
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
         
     } catch (error) {
-        console.error("Export error:", error);
-        alert("Gagal mengekspor dokumen. Silakan coba lagi.");
+        console.error('Export error:', error);
+        alert('Gagal mengekspor dokumen. Pastikan backend Python berjalan dan dapat diakses.');
+    } finally {
+        // Restore button state
+        const exportBtn = document.getElementById('export-word-btn');
+        if (exportBtn) {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="fas fa-file-word"></i> Ekspor ke Word';
+        }
     }
 }
 

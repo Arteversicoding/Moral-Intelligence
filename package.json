@@ -1,6 +1,7 @@
 {
   "name": "moral-intelligence",
   "version": "1.0.0",
+  "type": "module",
   "description": "Platform panduan bijak untuk pendidik dengan AI Gemini",
   "main": "index.html",
   "scripts": {
@@ -35,5 +36,8 @@
   "bugs": {
     "url": "https://github.com/your-username/moral-intelligence/issues"
   },
-  "homepage": "https://moral-intelligence.web.app"
+  "homepage": "https://moral-intelligence.web.app",
+  "dependencies": {
+    "dotenv": "^17.2.2"
+  }
 }
