@@ -7,7 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script>
+        // Make docx globally available
+        window.docx = window.docx;
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -356,6 +360,6 @@
     <script type="module" src="config.js"></script>
     <script type="module" src="chat-logic.js"></script>
     <script src="test-logic.js"></script>
-
+    
 </body>
 </html>

@@ -85,7 +85,12 @@ MI/
 ├── config.js               # Konfigurasi aplikasi
 ├── auth-service.js         # Service autentikasi
 ├── gemini-service.js       # Service AI Gemini
-└── README.md               # Dokumentasi ini
+├── README.md               # Dokumentasi ini
+├── backend/                # Backend untuk Word export
+│   ├── main.py              # Main file backend
+│   ├── requirements.txt    # Daftar dependensi Python
+│   └── README.md           # Dokumentasi backend
+└── ...
 ```
 
 ## 🔧 Instalasi & Setup
@@ -211,4 +216,62 @@ Proyek ini dilisensikan di bawah MIT License - lihat file [LICENSE](LICENSE) unt
 ---
 
 **Moral Intelligence** - Membantu pendidik membangun masa depan yang lebih baik melalui teknologi AI yang cerdas dan empatik. 🚀 
->>>>>>> 66def10 (first commit)
+
+# Moral Intelligence Test - Word Export Backend
+
+This project includes a Python backend for exporting test results to Word documents.
+
+## Prerequisites
+
+- Python 3.7 or higher
+- pip (Python package manager)
+
+## Setup Instructions
+
+1. **Install Python Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Start the Backend Server**
+   ```bash
+   python main.py
+   ```
+   The server will start on `http://localhost:8000`
+
+## API Endpoints
+
+- `POST /api/export-word` - Generates a Word document with test results
+
+## Development
+
+### Running in Development Mode
+
+For development with auto-reload:
+```bash
+uvicorn main:app --reload
+```
+
+### Testing the API
+
+You can test the API using curl or Postman:
+
+```bash
+curl -X POST http://localhost:8000/api/export-word \
+  -H "Content-Type: application/json" \
+  -d '{"overallScore": 75, "scoreCategory": "Baik", "scoreInterpretation": "Interpretasi skor...", "aspects": {"empati": 80, "hormat": 70}, "aspectCategories": {"empati": "Baik", "hormat": "Cukup"}}' \
+  --output result.docx
+```
+
+## Deployment
+
+For production deployment, consider using:
+- Gunicorn with Uvicorn workers
+- Nginx as a reverse proxy
+- Environment variables for configuration
+
+## Troubleshooting
+
+- **Port already in use**: Make sure port 8000 is available or change the port in `main.py`
+- **Missing dependencies**: Run `pip install -r requirements.txt`
+- **CORS issues**: Ensure the frontend URL is correctly configured in the CORS middleware

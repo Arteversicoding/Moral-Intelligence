@@ -234,9 +234,81 @@ function showHistoryAttempt(index) {
 }
 
 function showResults() {
-    document.getElementById('results-modal').classList.remove('hidden');
-    document.getElementById('results-content').classList.remove('hidden');
-    document.getElementById('history-tab').classList.add('hidden');
+    const resultsModal = document.getElementById('results-modal');
+    const resultsContent = document.getElementById('results-content');
+    const historyTab = document.getElementById('history-tab');
+    
+    if (!resultsModal || !resultsContent || !historyTab) {
+        console.error('Required elements not found in the DOM');
+        return;
+    }
+
+    resultsModal.classList.remove('hidden');
+    resultsContent.classList.remove('hidden');
+    historyTab.classList.add('hidden');
+    
+    const results = calculateFinalResults();
+    
+    const aspectScores = [];
+    const aspectLabels = [];
+    let totalScore = 0;
+    let totalMaxScore = 0;
+    
+    const detailedResults = document.getElementById('detailed-results');
+    if (detailedResults) {
+        detailedResults.innerHTML = '';
+    }
+
+    aspects.forEach(aspect => {
+        if (scores[aspect] && scores[aspect].length > 0) {
+            const sum = scores[aspect].reduce((a, b) => a + b, 0);
+            const maxScore = scores[aspect].length * 10;
+            const percentage = (sum / maxScore) * 100;
+            const category = getScoreCategory(percentage);
+            
+            totalScore += sum;
+            totalMaxScore += maxScore;
+            
+            aspectScores.push(percentage);
+            aspectLabels.push(capitalize(aspect));
+            
+            if (detailedResults) {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200';
+                resultItem.innerHTML = `
+                    <div>
+                        <span class="font-medium text-gray-800">${capitalize(aspect)}</span>
+                        <div class="text-xs text-gray-500">${scores[aspect].length} soal dijawab</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-indigo-600">${percentage.toFixed(1)}%</span>
+                        <div class="text-sm ${getCategoryColor(category)}">${category}</div>
+                    </div>
+                `;
+                detailedResults.appendChild(resultItem);
+            }
+        }
+    });
+
+    const finalScore = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
+    const overallScore = document.getElementById('overall-score');
+    const overallInterpretation = document.getElementById('overall-interpretation');
+    
+    if (overallScore) {
+        overallScore.textContent = `${finalScore.toFixed(1)}%`;
+    }
+    
+    if (overallInterpretation) {
+        overallInterpretation.textContent = getScoreInterpretation(finalScore);
+    }
+
+    // Initialize the chart
+    const ctx = document.getElementById('results-chart');
+    if (ctx) {
+        updateChart(ctx, aspectLabels, aspectScores);
+    } else {
+        console.error('Chart canvas not found');
+    }
 }
 
 function drawHistoryChart(attempt, index) {
@@ -572,9 +644,18 @@ function calculateFinalResults() {
 }
 
 function showResults() {
-    document.getElementById('results-modal').classList.remove('hidden');
-    document.getElementById('results-content').classList.remove('hidden');
-    document.getElementById('history-tab').classList.add('hidden');
+    const resultsModal = document.getElementById('results-modal');
+    const resultsContent = document.getElementById('results-content');
+    const historyTab = document.getElementById('history-tab');
+    
+    if (!resultsModal || !resultsContent || !historyTab) {
+        console.error('Required elements not found in the DOM');
+        return;
+    }
+
+    resultsModal.classList.remove('hidden');
+    resultsContent.classList.remove('hidden');
+    historyTab.classList.add('hidden');
     
     const results = calculateFinalResults();
     
@@ -643,12 +724,13 @@ function getScoreCategory(score) {
 
 function getCategoryColor(category) {
     const colors = {
-        "Perlu Perbaikan": "text-red-600",
-        "Cukup Baik": "text-yellow-600",
-        "Baik": "text-blue-600",
-        "Sangat Baik": "text-green-600"
+        'Sangat Baik': '#2E7D32',  // Hijau
+        'Baik': '#689F38',         // Hijau Muda
+        'Cukup': '#FFA000',        // Kuning
+        'Kurang': '#FF6D00',       // Orange
+        'Sangat Kurang': '#D32F2F' // Merah
     };
-    return colors[category] || "text-gray-600";
+    return colors[category] || '#000000';
 }
 
 function getScoreInterpretation(score) {
@@ -659,31 +741,34 @@ function getScoreInterpretation(score) {
 }
 
 function updateChart(ctx, labels, data) {
-    if (currentChart) {
-        currentChart.destroy();
+    const chartElement = typeof ctx === 'string' ? document.getElementById(ctx) : ctx;
+    if (!chartElement) {
+        console.error('Chart element not found');
+        return;
     }
-    
-    currentChart = new Chart(ctx, {
-        type: 'radar',
+
+    const existingChart = Chart.getChart(chartElement);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+
+    return new Chart(chartElement, {
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Skor Aspek',
                 data: data,
-                backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                borderColor: 'rgba(99, 102, 241, 1)',
-                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+                backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                borderColor: 'rgba(79, 70, 229, 1)',
+                borderWidth: 1
             }]
         },
         options: {
             scales: {
-                r: {
-                    angleLines: { display: true },
-                    suggestedMin: 0,
-                    suggestedMax: 100
+                y: {
+                    beginAtZero: true,
+                    max: 100
                 }
             }
         }
@@ -959,29 +1044,118 @@ function capitalize(str) {
 
 async function exportToWord() {
     try {
-        const { Document, Paragraph, TextRun, HeadingLevel, Packer } = docx;
+        const { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, Table, TableRow, TableCell, WidthType } = docx;
         const now = new Date();
         
-        // Create document
+        // Dapatkan hasil kuis
+        const results = calculateFinalResults();
+        const overallScore = Math.round(results.overallScore);
+        const scoreCategory = getScoreCategory(overallScore);
+        
+        // Buat dokumen
         const doc = new Document({
+            styles: {
+                default: {
+                    document: {
+                        run: {
+                            font: "Arial",
+                            size: 24, // 12pt
+                        },
+                    },
+                },
+            },
             sections: [{
                 properties: {},
                 children: [
+                    // Header
                     new Paragraph({
-                        text: "Laporan Hasil Quiz",
-                        heading: HeadingLevel.HEADING_1
+                        text: "LAPORAN HASIL TES KECERDASAN MORAL",
+                        heading: HeadingLevel.HEADING_1,
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 200 },
                     }),
-                    new Paragraph(`Dibuat: ${now.toLocaleString('id-ID')}`)
+                    
+                    // Informasi Tes
+                    new Paragraph({
+                        text: `Tanggal: ${now.toLocaleDateString('id-ID', { 
+                            day: '2-digit', 
+                            month: 'long', 
+                            year: 'numeric' 
+                        })}`,
+                        spacing: { after: 100 }
+                    }),
+                    
+                    // Skor Keseluruhan
+                    new Paragraph({
+                        text: "Skor Keseluruhan",
+                        heading: HeadingLevel.HEADING_2,
+                    }),
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: `${overallScore} - ${scoreCategory}`,
+                                bold: true,
+                                size: 28,
+                                color: getCategoryColor(aspectCategory).replace('#', '') || '000000'
+                            })
+                        ],
+                        spacing: { after: 200 }
+                    }),
+                    
+                    // Interpretasi Skor
+                    new Paragraph({
+                        text: getScoreInterpretation(overallScore),
+                        spacing: { after: 200 }
+                    }),
+                    
+                    // Hasil Detail
+                    new Paragraph({
+                        text: "Hasil Detail",
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 200, after: 100 }
+                    }),
+                    
+                    // Tabel Hasil
+                    new Table({
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        rows: [
+                            // Header
+                            new TableRow({
+                                children: [
+                                    new TableCell({ children: [new Paragraph("Aspek")], width: { size: 60, type: WidthType.PERCENTAGE } }),
+                                    new TableCell({ children: [new Paragraph("Skor")], width: { size: 20, type: WidthType.PERCENTAGE } }),
+                                    new TableCell({ children: [new Paragraph("Kategori")], width: { size: 20, type: WidthType.PERCENTAGE } })
+                                ]
+                            }),
+                            // Data
+                            ...Object.entries(results.aspects).map(([aspect, score]) => {
+                                const aspectScore = Math.round(score);
+                                const aspectCategory = getScoreCategory(aspectScore);
+                                return new TableRow({
+                                    children: [
+                                        new TableCell({ children: [new Paragraph(capitalize(aspect))] }),
+                                        new TableCell({ children: [new Paragraph(aspectScore.toString())] }),
+                                        new TableCell({ 
+                                            children: [new Paragraph({
+                                                text: aspectCategory,
+                                                color: getCategoryColor(aspectCategory).replace('#', '')
+                                            })]
+                                        })
+                                    ]
+                                });
+                            })
+                        ]
+                    })
                 ]
             }]
         });
 
-        // Generate and download
+        // Generate dan download
         const blob = await Packer.toBlob(doc);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Hasil_Quiz_${now.getTime()}.docx`;
+        a.download = `Hasil_Tes_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.docx`;
         document.body.appendChild(a);
         a.click();
         setTimeout(() => {
@@ -991,7 +1165,7 @@ async function exportToWord() {
         
     } catch (error) {
         console.error("Export error:", error);
-        alert("Gagal mengekspor dokumen");
+        alert("Gagal mengekspor dokumen. Silakan coba lagi.");
     }
 }
 
