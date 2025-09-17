@@ -35,60 +35,71 @@
         </div>
         
         <div class="p-6 space-y-6">
-            <!-- Search and Filter -->
-            <div class="space-y-4">
-                <div class="relative">
-                    <input type="text" id="search-input" placeholder="Cari materi pembelajaran..." 
-                           class="w-full pl-10 pr-4 py-3 bg-white rounded-2xl shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <!-- Main Content -->
+            <div class="container mx-auto px-4 py-8">
+                <!-- Loading State -->
+                <div id="loading-state" class="hidden text-center py-10">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Memuat materi...</p>
                 </div>
-                
-                <!-- Filter Buttons -->
-                <div class="flex space-x-2 overflow-x-auto pb-2">
-                    <button class="filter-btn px-4 py-2 bg-white rounded-full text-sm font-medium shadow-sm whitespace-nowrap" data-category="all">Semua</button>
-                    <button class="filter-btn px-4 py-2 bg-white/50 hover:bg-white rounded-full text-sm font-medium shadow-sm whitespace-nowrap" data-category="pdf">PDF</button>
-                    <button class="filter-btn px-4 py-2 bg-white/50 hover:bg-white rounded-full text-sm font-medium shadow-sm whitespace-nowrap" data-category="video">Video</button>
-                    <button class="filter-btn px-4 py-2 bg-white/50 hover:bg-white rounded-full text-sm font-medium shadow-sm whitespace-nowrap" data-category="document">Dokumen</button>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-10">
+                    <div class="w-24 h-24 mx-auto mb-4 text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900">Tidak ada materi</h3>
+                    <p class="mt-1 text-sm text-gray-500">Belum ada materi yang tersedia.</p>
                 </div>
-            </div>
-            
-            <!-- Loading State -->
-            <div id="loading-state" class="space-y-4">
-                <div class="skeleton h-32 rounded-2xl"></div>
-                <div class="skeleton h-32 rounded-2xl"></div>
-                <div class="skeleton h-32 rounded-2xl"></div>
-            </div>
-            
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden text-center py-12">
-                <div class="mx-auto w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-                    <i class="fas fa-inbox text-indigo-400 text-4xl"></i>
+
+                <!-- Search and Filter -->
+                <div class="mb-8">
+                    <div class="relative max-w-2xl mx-auto">
+                        <input type="text" id="search-input" 
+                               class="w-full px-6 py-4 rounded-2xl border-0 shadow-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                               placeholder="Cari materi...">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center mt-4 space-x-2 overflow-x-auto py-2">
+                        <button class="filter-btn px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-sm font-medium" data-filter="all">Semua</button>
+                        <button class="filter-btn px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium" data-filter="pdf">PDF</button>
+                        <button class="filter-btn px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium" data-filter="doc">Dokumen</button>
+                        <button class="filter-btn px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 text-sm font-medium" data-filter="video">Video</button>
+                    </div>
                 </div>
-                <h3 class="text-lg font-medium text-gray-700">Belum ada materi</h3>
-                <p class="text-gray-500 mt-1">Silakan hubungi admin untuk mengunggah materi baru</p>
-            </div>
-            
-            <!-- Featured Materials -->
-            <div id="featured-container" class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-900">Materi Unggulan</h2>
-                <div id="featured-materials" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Featured materials will be inserted here -->
+
+                <!-- Featured Materials -->
+                <div id="featured-container" class="mb-12 hidden">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Materi Unggulan</h2>
+                    <div id="featured-materials" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <!-- Featured items will be inserted here -->
+                    </div>
                 </div>
-            </div>
-            
-            <!-- All Materials -->
-            <div id="materials-container">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold text-gray-900">Semua Materi</h2>
-                    <span id="materials-count" class="text-sm text-gray-500">0 materi</span>
-                </div>
-                <div id="materials-list" class="grid grid-cols-1 gap-4">
-                    <!-- Materials will be inserted here -->
-                </div>
-            </div>
+
+                <!-- All Materials -->
+                <div id="materials-container">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold text-gray-900">Semua Materi</h2>
+                        <span id="materials-count" class="text-sm text-gray-500">0 materi</span>
+                    </div>
+                    <div id="materials-list" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <!-- Materials will be inserted here -->
+                        <div class="text-center py-10 text-gray-500">
+                            <p>Memuat materi...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+    </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -118,7 +129,8 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="materi-search.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="materi-search.js" defer></script>
     <script type="module" src="materials-display.js"></script>
 
     <script>
@@ -131,7 +143,6 @@
         }
         document.addEventListener('DOMContentLoaded', setActiveNav);
     </script>
-    <script src="materi-search.js" defer></script>
 
     <script type="module">
         import { supabase } from './supabase.js';
@@ -151,8 +162,8 @@
       
           console.log("✅ Daftar file dari bucket:", data);
       
-          const materiList = document.getElementById('materi-list');
-          materiList.innerHTML = '<h3 class="text-lg font-bold text-gray-800">📚 Semua Materi</h3>';
+          const materiList = document.getElementById('materials-list');
+          materiList.innerHTML = '';
       
           for (const file of data) {
             console.log("📄 File ditemukan:", file.name);

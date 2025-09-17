@@ -1,6 +1,15 @@
 // Base API URL - Update this with your actual API endpoint
 const API_BASE_URL = '/api';
 
+function getFullUrl(path) {
+    // Handle both relative and absolute URLs
+    if (path.startsWith('http')) {
+        return new URL(path);
+    }
+    // For relative URLs, use the current origin
+    return new URL(path, window.location.origin);
+}
+
 export class MaterialsService {
     static async uploadFile(file, path = '') {
         try {
@@ -8,7 +17,8 @@ export class MaterialsService {
             formData.append('file', file);
             if (path) formData.append('path', path);
 
-            const response = await fetch(`${API_BASE_URL}/materials/upload`, {
+            const url = getFullUrl(API_BASE_URL + '/materials/upload');
+            const response = await fetch(url, {
                 method: 'POST',
                 body: formData,
                 // Add authentication token if needed
@@ -32,7 +42,7 @@ export class MaterialsService {
 
     static async getMaterials(searchTerm = '') {
         try {
-            const url = new URL(`${API_BASE_URL}/materials`);
+            const url = getFullUrl(API_BASE_URL + '/materials');
             if (searchTerm) {
                 url.searchParams.append('search', searchTerm);
             }
@@ -58,7 +68,8 @@ export class MaterialsService {
 
     static async getMaterialById(id) {
         try {
-            const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+            const url = getFullUrl(API_BASE_URL + `/materials/${id}`);
+            const response = await fetch(url, {
                 // Add authentication token if needed
                 // headers: {
                 //     'Authorization': `Bearer ${getAuthToken()}`
@@ -79,7 +90,8 @@ export class MaterialsService {
 
     static async updateMaterial(id, updates) {
         try {
-            const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+            const url = getFullUrl(API_BASE_URL + `/materials/${id}`);
+            const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -102,7 +114,8 @@ export class MaterialsService {
 
     static async deleteMaterial(id) {
         try {
-            const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+            const url = getFullUrl(API_BASE_URL + `/materials/${id}`);
+            const response = await fetch(url, {
                 method: 'DELETE',
                 // headers: {
                 //     'Authorization': `Bearer ${getAuthToken()}`
@@ -123,7 +136,8 @@ export class MaterialsService {
 
     static async getMaterialsByUser(userId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/users/${userId}/materials`, {
+            const url = getFullUrl(API_BASE_URL + `/users/${userId}/materials`);
+            const response = await fetch(url, {
                 // headers: {
                 //     'Authorization': `Bearer ${getAuthToken()}`
                 // }

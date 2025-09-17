@@ -1,4 +1,4 @@
-import { MaterialsService } from './materials-service.js';
+import { supabase } from './supabase.js';
 
 export class MaterialsDisplay {
     static init() {
@@ -18,7 +18,7 @@ export class MaterialsDisplay {
             };
             
             // Verify required elements exist
-            const requiredElements = ['materialsList', 'featuredList'];
+            const requiredElements = ['materialsList'];
             for (const elem of requiredElements) {
                 if (!this.elements[elem]) {
                     console.error(`Required element not found: ${elem}`);
@@ -35,287 +35,215 @@ export class MaterialsDisplay {
             this.loadMaterials();
         } catch (error) {
             console.error('Error initializing MaterialsDisplay:', error);
-            alert('Gagal memuat halaman. Silakan refresh halaman.');
+            this.showError('Gagal memuat halaman. Silakan refresh halaman.');
         }
     }
 
     static setupEventListeners() {
         // Search input
-        this.elements.searchInput.addEventListener('input', (e) => {
-            this.searchQuery = e.target.value.toLowerCase();
-            this.filterAndDisplayMaterials();
-        });
+        if (this.elements.searchInput) {
+            this.elements.searchInput.addEventListener('input', (e) => {
+                this.searchQuery = e.target.value.toLowerCase();
+                this.filterAndRenderMaterials();
+            });
+        }
 
         // Filter buttons
-        this.elements.filterButtons.forEach(btn => {
-            btn.addEventListener('click', () => this.setActiveFilter(btn.dataset.category));
+        this.elements.filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.elements.filterButtons.forEach(btn => {
+                    btn.classList.remove('bg-indigo-100', 'text-indigo-700');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                });
+                
+                button.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                button.classList.add('bg-indigo-100', 'text-indigo-700');
+                
+                this.currentFilter = button.dataset.filter;
+                this.filterAndRenderMaterials();
+            });
         });
-
-        // Refresh button
-        this.elements.refreshBtn.addEventListener('click', () => this.loadMaterials());
     }
 
     static async loadMaterials() {
         try {
             this.showLoading(true);
             
-            // Use the MaterialsService to fetch materials
-            const materials = await MaterialsService.getMaterials();
-            
-            if (!materials) {
-                throw new Error('Gagal memuat materi');
-            }
+            // Load materials from Supabase
+            const { data, error } = await supabase
+                .storage
+                .from('Mobile-Intelligence')
+                .list('materi', { limit: 100 });
 
-            this.materials = Array.isArray(materials) ? materials : [];
-            this.featuredMaterials = this.materials.filter(material => material.is_featured);
-            
-            if (this.elements.emptyState) {
-                this.elements.emptyState.classList.toggle('hidden', this.materials.length > 0);
-            }
-            
-            if (this.materials.length > 0) {
-                this.filterAndDisplayMaterials();
-            } else if (this.elements.materialsList) {
-                this.elements.materialsList.innerHTML = '';
-            }
-            
-            this.updateMaterialsCount(this.materials.length);
+            if (error) throw error;
+
+            this.materials = data
+                .filter(file => file.name !== '.emptyFolderPlaceholder')
+                .map(file => ({
+                    id: file.id,
+                    name: file.name,
+                    type: this.getFileType(file.name),
+                    size: file.metadata?.size || 0,
+                    lastModified: file.metadata?.lastModified || new Date().toISOString(),
+                    url: this.getFileUrl(file.name)
+                }));
+
+            this.filterAndRenderMaterials();
+            this.updateMaterialsCount();
             
         } catch (error) {
             console.error('Error loading materials:', error);
-            if (this.elements.emptyState) {
-                this.elements.emptyState.classList.remove('hidden');
-                this.elements.emptyState.innerHTML = `
-                    <div class="text-center py-8">
-                        <div class="text-red-500 text-4xl mb-2">⚠️</div>
-                        <h3 class="text-lg font-medium text-gray-900">Gagal memuat materi</h3>
-                        <p class="text-gray-500 mt-1">${error.message || 'Terjadi kesalahan'}</p>
-                        <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                            Muat Ulang Halaman
-                        </button>
-                    </div>
-                `;
-            }
+            this.showError('Gagal memuat daftar materi. Silakan coba lagi.');
         } finally {
             this.showLoading(false);
         }
     }
 
-    static filterAndDisplayMaterials() {
-        // Filter materials based on search query and active filter
-        const filtered = this.materials.filter(material => {
-            const matchesSearch = material.title.toLowerCase().includes(this.searchQuery) ||
-                               material.description.toLowerCase().includes(this.searchQuery);
-            
-            let matchesFilter = true;
-            if (this.currentFilter !== 'all') {
-                matchesFilter = material.type === this.currentFilter;
-            }
-            
-            return matchesSearch && matchesFilter;
-        });
+    static getFileType(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        const types = {
+            pdf: ['pdf'],
+            document: ['doc', 'docx', 'txt', 'rtf'],
+            video: ['mp4', 'mov', 'avi', 'mkv'],
+            image: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+            archive: ['zip', 'rar', '7z']
+        };
 
-        // Update UI
-        this.displayMaterials(filtered);
-        this.updateFeaturedMaterials();
-        this.updateMaterialsCount(filtered.length);
-        
-        // Show/hide empty state with null checks
-        if (this.elements.emptyState) {
-            this.elements.emptyState.classList.toggle('hidden', filtered.length > 0 || this.materials.length > 0);
+        for (const [type, exts] of Object.entries(types)) {
+            if (exts.includes(extension)) return type;
         }
         
-        if (this.elements.materialsContainer) {
-            this.elements.materialsContainer.classList.toggle('hidden', this.materials.length === 0);
-        }
-        
-        if (this.elements.featuredContainer) {
-            this.elements.featuredContainer.classList.toggle('hidden', this.featuredMaterials.length === 0);
-        }
+        return 'other';
     }
 
-    static updateFeaturedMaterials() {
-        if (!this.elements.featuredContainer || !this.elements.featuredList) {
-            console.warn('Featured container or list elements not found');
+    static getFileUrl(filename) {
+        const { data } = supabase
+            .storage
+            .from('Mobile-Intelligence')
+            .getPublicUrl(`materi/${filename}`);
+        
+        return data?.publicUrl || '';
+    }
+
+    static filterAndRenderMaterials() {
+        let filtered = [...this.materials];
+
+        // Apply search filter
+        if (this.searchQuery) {
+            filtered = filtered.filter(material => 
+                material.name.toLowerCase().includes(this.searchQuery)
+            );
+        }
+
+        // Apply type filter
+        if (this.currentFilter !== 'all') {
+            filtered = filtered.filter(material => 
+                material.type === this.currentFilter
+            );
+        }
+
+        this.renderMaterials(filtered);
+    }
+
+    static renderMaterials(materials) {
+        if (!materials.length) {
+            this.elements.emptyState?.classList.remove('hidden');
+            this.elements.materialsContainer?.classList.add('hidden');
             return;
         }
 
-        if (this.featuredMaterials.length === 0) {
-            this.elements.featuredContainer.classList.add('hidden');
-            return;
-        }
+        this.elements.emptyState?.classList.add('hidden');
+        this.elements.materialsContainer?.classList.remove('hidden');
 
-        this.elements.featuredContainer.classList.remove('hidden');
-        this.elements.featuredList.innerHTML = this.featuredMaterials
-            .slice(0, 3) // Show max 3 featured materials
-            .map(material => this.createMaterialCard(material, true))
-            .join('');
-    }
-
-    static displayMaterials(materials) {
-        if (materials.length === 0) {
-            this.elements.materialsList.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <p>Tidak ada materi yang ditemukan.</p>
-                </div>
-            `;
-            return;
-        }
-
-        this.elements.materialsList.innerHTML = materials
-            .map(material => this.createMaterialCard(material))
-            .join('');
-    }
-
-    static createMaterialCard(material, isFeatured = false) {
-        const icon = this.getMaterialIcon(material.type);
-        const timeAgo = this.formatTimeAgo(material.created_at);
-        
-        return `
-            <div class="material-card bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow ${isFeatured ? 'border-l-4 border-indigo-500' : ''}">
-                <div class="flex items-start space-x-4">
-                    <div class="w-12 h-12 ${this.getMaterialColor(material.type)} rounded-xl flex items-center justify-center text-white flex-shrink-0">
-                        <i class="${icon}"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-gray-800 mb-1 truncate">${material.title}</h4>
-                        <p class="text-gray-600 text-sm mb-2 line-clamp-2">${material.description || 'Tidak ada deskripsi'}</p>
-                        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                            <span>📅 ${timeAgo}</span>
-                            ${material.duration ? `<span>⏱️ ${material.duration} min</span>` : ''}
-                            ${material.level ? `<span>📊 ${material.level}</span>` : ''}
+        const html = materials.map(material => `
+            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="p-6">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+                            ${this.getFileIcon(material.type)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-base font-medium text-gray-900 truncate">${material.name}</h3>
+                            <p class="text-sm text-gray-500">${this.formatFileSize(material.size)} • ${this.formatDate(material.lastModified)}</p>
                         </div>
                     </div>
-                    ${isFeatured ? '<span class="text-yellow-500 text-sm font-medium">⭐</span>' : ''}
+                    <div class="flex justify-end space-x-2">
+                        <a href="${material.url}" download="${material.name}" 
+                           class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Unduh
+                        </a>
+                        <a href="${material.url}" target="_blank" rel="noopener noreferrer"
+                           class="px-4 py-2 bg-white border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Buka
+                        </a>
+                    </div>
                 </div>
-                ${this.getMaterialAction(material)}
             </div>
-        `;
+        `).join('');
+
+        this.elements.materialsList.innerHTML = html;
+        this.updateMaterialsCount(materials.length);
     }
 
-    static getMaterialIcon(type) {
+    static getFileIcon(type) {
         const icons = {
-            'pdf': 'far fa-file-pdf',
-            'video': 'fas fa-video',
-            'link': 'fas fa-link',
-            'document': 'far fa-file-alt',
-            'presentation': 'far fa-file-powerpoint',
-            'spreadsheet': 'far fa-file-excel'
+            pdf: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>`,
+            document: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>`,
+            video: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>`,
+            image: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>`,
+            default: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>`
         };
-        return icons[type] || 'far fa-file';
-    }
 
-    static getMaterialColor(type) {
-        const colors = {
-            'pdf': 'bg-gradient-to-r from-red-400 to-pink-500',
-            'video': 'bg-gradient-to-r from-blue-400 to-cyan-500',
-            'link': 'bg-gradient-to-r from-indigo-400 to-purple-500',
-            'document': 'bg-gradient-to-r from-green-400 to-emerald-500',
-            'presentation': 'bg-gradient-to-r from-orange-400 to-red-500',
-            'spreadsheet': 'bg-gradient-to-r from-green-500 to-lime-500'
-        };
-        return colors[type] || 'bg-gradient-to-r from-gray-400 to-gray-600';
-    }
-
-    static getMaterialAction(material) {
-        if (material.type === 'link') {
-            return `
-                <div class="mt-3 pt-3 border-t border-gray-100">
-                    <a href="${material.file_path}" target="_blank" 
-                       class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
-                        Kunjungi Link <i class="fas fa-external-link-alt ml-1 text-xs"></i>
-                    </a>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span class="text-xs text-gray-500">${this.formatFileSize(material.file_size)}</span>
-                <a href="${this.getFileUrl(material.file_path)}" 
-                   class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
-                   download>
-                    <i class="fas fa-download mr-1"></i> Unduh
-                </a>
-            </div>
-        `;
-    }
-
-    static getFileUrl(path) {
-        if (!path) return '#';
-        if (path.startsWith('http')) return path;
-        // Return path as is or implement your own URL construction logic
-        return path;
+        return icons[type] || icons.default;
     }
 
     static formatFileSize(bytes) {
-        if (!bytes) return '';
-        const units = ['B', 'KB', 'MB', 'GB'];
-        let size = parseFloat(bytes);
-        let unit = 0;
-        while (size >= 1024 && unit < units.length - 1) {
-            size /= 1024;
-            unit++;
-        }
-        return `${size.toFixed(1)} ${units[unit]}`;
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    static formatTimeAgo(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - date) / 1000);
-        
-        const intervals = {
-            tahun: 31536000,
-            bulan: 2592000,
-            minggu: 604800,
-            hari: 86400,
-            jam: 3600,
-            menit: 60,
-            detik: 1
-        };
-        
-        for (const [unit, seconds] of Object.entries(intervals)) {
-            const interval = Math.floor(diffInSeconds / seconds);
-            if (interval >= 1) {
-                return `${interval} ${unit} yang lalu`;
-            }
-        }
-        
-        return 'Baru saja';
-    }
-
-    static setActiveFilter(filter) {
-        this.currentFilter = filter;
-        this.elements.filterButtons.forEach(btn => {
-            const isActive = btn.dataset.category === filter;
-            btn.classList.toggle('bg-indigo-100', isActive);
-            btn.classList.toggle('text-indigo-800', isActive);
-            btn.classList.toggle('bg-gray-100', !isActive);
-            btn.classList.toggle('text-gray-700', !isActive);
-        });
-        this.filterAndDisplayMaterials();
+    static formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('id-ID', options);
     }
 
     static updateMaterialsCount(count) {
-        this.elements.materialsCount.textContent = count;
+        if (!this.elements.materialsCount) return;
+        
+        const total = count ?? this.materials.length;
+        this.elements.materialsCount.textContent = 
+            `${total} ${total === 1 ? 'materi' : 'materi'}`;
     }
 
     static showLoading(show) {
-        // Safely toggle loading state
-        if (this.elements.loading) {
-            this.elements.loading.classList.toggle('hidden', !show);
-        }
-        
-        // Hide other containers when loading
         if (show) {
-            if (this.elements.materialsContainer) {
-                this.elements.materialsContainer.classList.add('hidden');
-            }
-            if (this.elements.emptyState) {
-                this.elements.emptyState.classList.add('hidden');
-            }
+            this.elements.loading?.classList.remove('hidden');
+            this.elements.materialsContainer?.classList.add('hidden');
+            this.elements.emptyState?.classList.add('hidden');
+        } else {
+            this.elements.loading?.classList.add('hidden');
+            this.elements.materialsContainer?.classList.remove('hidden');
         }
+    }
+
+    static showError(message) {
+        console.error(message);
+        // You can implement a more user-friendly error display here
+        alert(message);
     }
 }
 
