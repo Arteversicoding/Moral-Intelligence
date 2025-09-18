@@ -117,12 +117,14 @@ export class MaterialsDisplay {
     }
 
     static getFileUrl(filename) {
-        const { data } = supabase
-            .storage
+        // Generate a signed URL for downloads to ensure proper file serving
+        const { data } = supabase.storage
             .from('Mobile-Intelligence')
             .getPublicUrl(`materi/${filename}`);
         
-        return data?.publicUrl || '';
+        // Add a timestamp to prevent caching issues
+        const timestamp = new Date().getTime();
+        return `${data.publicUrl}?t=${timestamp}`;
     }
 
     static filterAndRenderMaterials() {

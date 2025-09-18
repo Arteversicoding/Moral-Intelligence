@@ -6,7 +6,7 @@
   "main": "index.html",
   "scripts": {
     "start": "live-server",
-    "build": "echo 'No build step required for static site'",
+    "build": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
     "deploy": "firebase deploy",
     "test": "echo 'No tests specified'"
   },
