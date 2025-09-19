@@ -97,303 +97,35 @@ const questions = {
 };
 
 const keywords = {
-    empati: [
-        "peduli","prihatin","empati","tolong","bantu","rasakan","perasaan",
-        "pahami","simpati","perhatian","teman","bela","berbagi","menghibur","tenang",
-        "senang","sedih","khawatir","canggung","terharu","menolong","kasihan","iba"
-    ],
-    hatiNurani: [
-        "jujur","kejujuran","bertanggung","tanggung jawab","maaf","minta maaf","janji",
-        "salah","benar","dosa","akui","memperbaiki","perbaikan","kesalahan",
-        "malu","rasa bersalah","menyesal","integritas","adil","kebaikan","moral","etika"
-    ],
-    pengendalianDiri: [
-        "sabar","kesabaran","tenang","napas","tarik napas","kontrol","kendali",
-        "menahan diri","mengendalikan","tidak marah","tidak emosi","fokus","berhati-hati",
-        "disiplin","teratur","tertib","aturlah","kontrol diri","diam","tidak terburu-buru","mengatur"
-    ],
-    hormat: [
-        "hormat","menghormati","menghargai","tenggang rasa","sopan","santun",
-        "permisi","tolong","maaf","sopan santun","etika","tatakrama","nilai",
-        "adab","unggah-ungguh","dengar","mendengarkan","memperhatikan","tidak mengejek","tidak menghina","menghargai"
-    ],
-    kebaikanHati: [
-        "baik","kebaikan","ramah","lembut","kasih sayang","welas asih","peduli",
-        "empati","simpati","murah hati","dermawan","penolong","menolong","bantu",
-        "menghibur","dukung","dukungan","pemaaf","pengertian","ikhlas","tulus","baik hati"
-    ],
-    toleransi: [
-        "toleransi","menerima","penerimaan","menghargai","keterbukaan","berpikiran terbuka",
-        "saling menghargai","kesetaraan","tidak diskriminasi","perbedaan","berbeda",
-        "beragam","plural","ramah","tidak menghakimi","tidak stereotip","sabar","adil","solidaritas","saling menghormati","inklusif"
-    ],
-    keadilan: [
-        "adil","keadilan","jujur","kejujuran","setara","kesetaraan","hak","hak-hak",
-        "aturan","peraturan","sportif","sportivitas","gilir","bergiliran","berbagi",
-        "kompromi","win-win","kesepakatan","mendengarkan","transparan","tidak pilih kasih","tidak curang","fair","objektif"
-    ]
+    empati: [ "peduli","prihatin","empati","tolong","bantu","rasakan","perasaan", "pahami","simpati","perhatian","teman","bela","berbagi","menghibur","tenang", "senang","sedih","khawatir","canggung","terharu","menolong","kasihan","iba" ],
+    hatiNurani: [ "jujur","kejujuran","bertanggung","tanggung jawab","maaf","minta maaf","janji", "salah","benar","dosa","akui","memperbaiki","perbaikan","kesalahan", "malu","rasa bersalah","menyesal","integritas","adil","kebaikan","moral","etika" ],
+    pengendalianDiri: [ "sabar","kesabaran","tenang","napas","tarik napas","kontrol","kendali", "menahan diri","mengendalikan","tidak marah","tidak emosi","fokus","berhati-hati", "disiplin","teratur","tertib","aturlah","kontrol diri","diam","tidak terburu-buru","mengatur" ],
+    hormat: [ "hormat","menghormati","menghargai","tenggang rasa","sopan","santun", "permisi","tolong","maaf","sopan santun","etika","tatakrama","nilai", "adab","unggah-ungguh","dengar","mendengarkan","memperhatikan","tidak mengejek","tidak menghina","menghargai" ],
+    kebaikanHati: [ "baik","kebaikan","ramah","lembut","kasih sayang","welas asih","peduli", "empati","simpati","murah hati","dermawan","penolong","menolong","bantu", "menghibur","dukung","dukungan","pemaaf","pengertian","ikhlas","tulus","baik hati" ],
+    toleransi: [ "toleransi","menerima","penerimaan","menghargai","keterbukaan","berpikiran terbuka", "saling menghargai","kesetaraan","tidak diskriminasi","perbedaan","berbeda", "beragam","plural","ramah","tidak menghakimi","tidak stereotip","sabar","adil","solidaritas","saling menghormati","inklusif" ],
+    keadilan: [ "adil","keadilan","jujur","kejujuran","setara","kesetaraan","hak","hak-hak", "aturan","peraturan","sportif","sportivitas","gilir","bergiliran","berbagi", "kompromi","win-win","kesepakatan","mendengarkan","transparan","tidak pilih kasih","tidak curang","fair","objektif" ]
+};
+
+const aspectDisplayNames = {
+    empati: 'Empati',
+    hatiNurani: 'Hati Nurani',
+    pengendalianDiri: 'Pengendalian Diri',
+    hormat: 'Hormat',
+    kebaikanHati: 'Kebaikan Hati',
+    toleransi: 'Toleransi',
+    keadilan: 'Keadilan',
 };
 
 // === State Tes ===
-let aspects = Object.keys(keywords);
-let currentAspect = null;  // Add this line if it's needed
+let aspects = Object.keys(questions);
 let currentAspectIndex = 0;
 let currentQuestionIndex = 0;
-let currentQuestionNumber = 1; 
+let currentQuestionNumber = 1;
 let answers = {};
 let scores = {};
 let totalQuestions = 70;
 let radarChartInstance = null;
-let isQuizStarted = false;
-
-// Add this near the top with other global variables
 let quizHistory = JSON.parse(localStorage.getItem('quizHistory')) || [];
-let currentResults = null;
-let currentChart = null;
-
-// Add this after your global variables
-const aspectDisplayNames = {
-    'empati': 'Empati',
-    'hatiNurani': 'Hati Nurani',
-    'kontrolDiri': 'Kontrol Diri',
-    'rasaHormat': 'Rasa Hormat',
-    'kebaikanHati': 'Kebaikan Hati',
-    'toleransi': 'Toleransi',
-    'keadilan': 'Keadilan',
-};
-
-// Update the completeQuiz function to save results
-function completeQuiz() {
-    try {
-        const resultsModal = document.getElementById('results-modal');
-        const resultsContent = document.getElementById('results-content');
-        
-        if (resultsModal) resultsModal.classList.remove('hidden');
-        if (resultsContent) resultsContent.classList.remove('hidden');
-        
-        showResults();
-    } catch (error) {
-        console.error('Error in completeQuiz:', error);
-        // Fallback behavior if showing results fails
-        alert('Quiz selesai! Terima kasih telah mengerjakan.');
-    }
-}
-
-// Add these functions to handle history display
-function showQuizHistory() {
-    document.getElementById('results-content').classList.add('hidden');
-    document.getElementById('history-tab').classList.remove('hidden');
-    
-    const historyContainer = document.getElementById('quiz-history-container');
-    if (!historyContainer) return;
-    
-    if (quizHistory.length === 0) {
-        historyContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada riwayat kuis</p>';
-        return;
-    }
-    
-    historyContainer.innerHTML = quizHistory.map((attempt, index) => {
-        const date = new Date(attempt.date);
-        const formattedDate = date.toLocaleString('id-ID');
-        
-        return `
-            <div class="bg-white rounded-xl shadow-md p-4 mb-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-semibold">Percobaan #${index + 1}</h3>
-                    <span class="text-sm text-gray-500">${formattedDate}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-2xl font-bold">${attempt.overallScore}/100</span>
-                        <span class="ml-2 px-2 py-1 rounded-full text-xs ${getCategoryColor(attempt.category)}">
-                            ${attempt.category}
-                        </span>
-                    </div>
-                    <button onclick="showHistoryAttempt(${index})" class="text-indigo-600 hover:text-indigo-800">
-                        Lihat Detail
-                    </button>
-                </div>
-                <div id="history-chart-${index}" class="mt-3" style="height: 200px;"></div>
-            </div>
-        `;
-    }).join('');
-    
-    // Draw charts for each history entry
-    setTimeout(() => {
-        quizHistory.forEach((attempt, index) => {
-            if (document.getElementById(`history-chart-${index}`)) {
-                drawHistoryChart(attempt, index);
-            }
-        });
-    }, 100);
-}
-
-function showHistoryAttempt(index) {
-    const attempt = quizHistory[index];
-    if (!attempt) return;
-    
-    // Update the results modal with history data
-    document.getElementById('overall-score').textContent = attempt.overallScore + '/100';
-    document.getElementById('overall-category').textContent = attempt.category;
-    
-    // Update the chart
-    updateResultsChart(attempt.scores);
-    
-    // Show the results tab
-    showResultsTab();
-}
-
-function showResults() {
-    // Define all required elements
-    const requiredElements = [
-        'results-modal',
-        'results-content',
-        'history-tab',
-        'detailed-results',
-        'overall-score',
-        'overall-category',
-        'results-chart'
-    ];
-
-    // Initialize elements object
-    const elements = {};
-    let allElementsExist = true;
-
-    // Check all required elements
-    requiredElements.forEach(id => {
-        elements[id] = document.getElementById(id);
-        if (!elements[id]) {
-            console.error(`Element with ID '${id}' not found`);
-            allElementsExist = false;
-        }
-    });
-
-    if (!allElementsExist) {
-        console.error('Required elements not found in the DOM');
-        return;
-    }
-
-    // Show results modal and hide history
-    elements['results-modal'].classList.remove('hidden');
-    elements['results-content'].classList.remove('hidden');
-    elements['history-tab'].classList.add('hidden');
-
-    // Show the results tab
-    showResultsTab();
-
-    requestAnimationFrame(() => {
-        try {
-            const results = calculateFinalResults();
-            const { aspectLabels, aspectScores, overallScore, overallCategory } = results;
-            
-            // Clear previous results
-            elements['detailed-results'].innerHTML = '';
-
-            // Process each aspect
-            aspects.forEach((aspect, index) => {
-                if (scores[aspect] && scores[aspect].length > 0) {
-                    const sum = scores[aspect].reduce((a, b) => a + (b || 0), 0);
-                    const maxScore = scores[aspect].length * 10;
-                    const percentage = maxScore > 0 ? (sum / maxScore) * 100 : 0;
-                    const category = getScoreCategory(percentage);
-                    
-                    // Create result item
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200 mb-2';
-                    resultItem.innerHTML = `
-                        <div>
-                            <span class="font-medium text-gray-800">${aspectDisplayNames[aspect] || capitalize(aspect)}</span>
-                            <div class="text-xs text-gray-500">${scores[aspect].length} soal dijawab</div>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-lg font-bold text-indigo-600">${percentage.toFixed(1)}%</span>
-                            <div class="text-sm ${getCategoryColor(category)}">${category}</div>
-                        </div>
-                    `;
-                    elements['detailed-results'].appendChild(resultItem);
-                }
-            });
-
-            // Update overall score display
-            elements['overall-score'].textContent = `${overallScore.toFixed(1)}%`;
-            elements['overall-category'].textContent = overallCategory;
-            elements['overall-category'].className = `text-lg font-medium ${getCategoryColor(overallCategory)}`;
-
-            // Initialize chart with a small delay to ensure DOM is ready
-            // In the showResults function, update the chart initialization:
-            setTimeout(() => {
-                const ctx = document.getElementById('results-chart');
-                if (ctx) {
-                    // Force a small delay to ensure the container is visible
-                    setTimeout(() => {
-                        updateChart(ctx, aspectLabels, aspectScores);
-                    }, 100);
-                } else {
-                    console.error('Chart canvas element not found');
-                }
-            }, 100);
-
-            // Save to history
-            const historyItem = {
-                date: new Date().toISOString(),
-                score: overallScore,
-                category: overallCategory,
-                aspectScores: Object.fromEntries(
-                    aspects.map((aspect, i) => [
-                        aspect,
-                        aspectScores[i] || 0
-                    ])
-                )
-            };
-
-            // Update history in localStorage
-            const history = JSON.parse(localStorage.getItem('quizHistory') || '[]');
-            history.unshift(historyItem);
-            localStorage.setItem('quizHistory', JSON.stringify(history));
-
-        } catch (error) {
-            console.error('Error showing results:', error);
-            alert('Terjadi kesalahan saat menampilkan hasil. Silakan coba lagi.');
-        }
-    });   
-}
-
-function drawHistoryChart(attempt, index) {
-    const container = document.getElementById(`history-chart-${index}`);
-    if (!container) return;
-    
-    const canvas = document.createElement('canvas');
-    container.appendChild(canvas);
-    
-    const labels = Object.keys(attempt.scores);
-    const data = Object.values(attempt.scores);
-    
-    new Chart(canvas, {
-        type: 'radar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Skor Aspek',
-                data: data,
-                backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                borderColor: 'rgba(99, 102, 241, 1)',
-                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
-            }]
-        },
-        options: {
-            scales: {
-                r: {
-                    angleLines: { display: true },
-                    suggestedMin: 0,
-                    suggestedMax: 100
-                }
-            }
-        }
-    });
-}
 
 // === Initialize ===
 document.addEventListener('DOMContentLoaded', () => {
@@ -402,1134 +134,460 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeQuiz() {
-    // Reset state
-    answers = {};
-    scores = {};
     currentAspectIndex = 0;
     currentQuestionIndex = 0;
     currentQuestionNumber = 1;
-    currentAspect = aspects[0];  // Initialize currentAspect
-    
-    // Initialize answers and scores for each aspect
+    answers = {};
+    scores = {};
     aspects.forEach(aspect => {
         answers[aspect] = [];
         scores[aspect] = [];
     });
-    
-    // Show the first question
     showCurrentQuestion();
+    updateProgressDisplay();
 }
 
 function setupQuizEventListeners() {
-    // Answer input events
     const answerInput = document.getElementById('answer-input');
     const submitBtn = document.getElementById('submit-answer-btn');
-    const quickAskBtn = document.getElementById('quick-ask-ai-btn');
-    const explainBtn = document.getElementById('explain-aspect-btn');
-    const prevBtn = document.getElementById('prev-question-btn'); // Tombol baru
-    
     if (answerInput) {
         answerInput.addEventListener('input', updateCharCount);
         answerInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
                 e.preventDefault();
-                submitAnswer();
+                submitBtn.click();
             }
         });
     }
-    
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitAnswer);
-    }
-    
-    if (quickAskBtn) {
-        quickAskBtn.addEventListener('click', quickAskAI);
-    }
-    
-    if (explainBtn) {
-        explainBtn.addEventListener('click', explainCurrentAspect);
-    }
-
-    if (prevBtn) { // Event listener untuk tombol baru
-        prevBtn.addEventListener('click', moveToPreviousQuestion);
-    }
+    if (submitBtn) submitBtn.addEventListener('click', submitAnswer);
 }
 
 function showCurrentQuestion() {
-        // Initialize answers object if it doesn't exist
-        if (!answers) answers = {};
-        
-        // Get current aspect with null check and assign to currentAspect
-        currentAspect = aspects && aspects[currentAspectIndex];
-        if (!currentAspect) {
-            console.error('Aspect not found at index:', currentAspectIndex);
-            return;
-        }
-        
-        // Get display name with fallback to formatted aspect name
-        const displayName = aspectDisplayNames[currentAspect] || 
-                           currentAspect.replace(/([A-Z])/g, ' $1')
-                                .replace(/^./, str => str.toUpperCase());
-        
-        // Initialize answers array for current aspect if needed
-        if (!answers[currentAspect]) answers[currentAspect] = [];    
+    const aspect = aspects[currentAspectIndex];
+    const question = questions[aspect][currentQuestionIndex];
+    const displayName = aspectDisplayNames[aspect] || capitalize(aspect);
     
-    // Get questions for current aspect
-    const currentQuestions = questions[currentAspect];
-    if (!currentQuestions || currentQuestionIndex >= currentQuestions.length) {
-        moveToNextQuestion();
-        return;
-    }
+    document.getElementById('question-title').textContent = `Pertanyaan ${displayName}`;
+    document.getElementById('question-text').textContent = question;
+    document.getElementById('aspect-name').textContent = displayName;
+    document.getElementById('current-aspect-display').textContent = displayName;
+    document.getElementById('question-number').textContent = currentQuestionNumber;
+    
+    const prevBtn = document.getElementById('prev-question-btn');
+    prevBtn.style.display = currentQuestionNumber > 1 ? 'inline-flex' : 'none';
+    prevBtn.onclick = moveToPreviousQuestion;
 
-    // Get all DOM elements at once
-    const questionElement = document.getElementById('question-text');
-    const aspectNameElement = document.getElementById('aspect-name');
-    const questionTitleElement = document.getElementById('question-title');
-    const questionNumberElement = document.getElementById('question-number');
     const answerInput = document.getElementById('answer-input');
+    answerInput.value = (answers[aspect] && answers[aspect][currentQuestionIndex]) || '';
+    answerInput.focus();
     
-    // Update question text
-    if (questionElement) {
-        questionElement.textContent = currentQuestions[currentQuestionIndex];
-    }
-    
-    // Update aspect name display
-    if (aspectNameElement) {
-        aspectNameElement.textContent = displayName;
-    }
-    
-    // Update question title
-    if (questionTitleElement) {
-        questionTitleElement.textContent = `Pertanyaan ${displayName}`;
-    }
-    
-    // Update question number
-    if (questionNumberElement) {
-        questionNumberElement.textContent = currentQuestionNumber;
-    }
-    
-    // Update progress display
-    updateProgressDisplay();
-    
-    // Restore previous answer if exists
-    if (answerInput) {
-        const previousAnswer = answers[currentAspect] && answers[currentAspect][currentQuestionIndex] || '';
-        answerInput.value = previousAnswer;
-        answerInput.focus();
-    }
-    
-    // Update character count
     updateCharCount();
+    updateProgressDisplay();
 }
 
 function updateProgressDisplay() {
-    const prevBtn = document.getElementById('prev-question-btn');
-    if (prevBtn) {
-        prevBtn.style.display = (currentQuestionNumber > 1) ? 'block' : 'none';
-    }
-
-    // Calculate total questions across all aspects
-    let totalQuestionsCount = 0;
-    let questionsSoFar = 0;
-    
-    // Calculate total questions
-    aspects.forEach(aspect => {
-        totalQuestionsCount += questions[aspect]?.length || 0;
-    });
-    
-    // Calculate questions completed so far
-    for (let i = 0; i < currentAspectIndex; i++) {
-        questionsSoFar += questions[aspects[i]]?.length || 0;
-    }
-    questionsSoFar += currentQuestionIndex; // Add current aspect's questions
-    
-    // Update progress text
-    const progressText = document.getElementById('progress-text');
-    if (progressText) {
-        progressText.textContent = `Pertanyaan ${questionsSoFar + 1} dari ${totalQuestionsCount}`;
-    }
-
-    // Update progress bar
-    const progressBar = document.getElementById('progress-bar');
-    const progressPercentage = document.getElementById('progress-percentage');
-    const progress = ((questionsSoFar) / totalQuestionsCount) * 100;
-    
-    if (progressBar) {
-        progressBar.style.width = `${progress}%`;
-    }
-    
-    if (progressPercentage) {
-        progressPercentage.textContent = `${Math.round(progress)}%`;
-    }
+    document.getElementById('progress-text').textContent = `Soal ${currentQuestionNumber} dari ${totalQuestions}`;
+    const progress = (currentQuestionNumber / totalQuestions) * 100;
+    document.getElementById('progress-bar').style.width = `${progress}%`;
+    document.getElementById('progress-percentage').textContent = `${progress.toFixed(1)}%`;
 }
 
 function updateCharCount() {
-    const input = document.getElementById('answer-input');
-    const charCountElement = document.getElementById('char-count');
-    const submitBtn = document.getElementById('submit-answer-btn');
-    
-    if (!input) return;
-    
-    const count = input.value.length;
-    if (charCountElement) {
-        charCountElement.textContent = count;
-    }
-    
-    if (submitBtn) {
-        submitBtn.disabled = count < 10;
-    }
+    const count = document.getElementById('answer-input').value.length;
+    document.getElementById('char-count').textContent = count;
+    document.getElementById('submit-answer-btn').disabled = count < 10;
 }
 
 function submitAnswer() {
     const answer = document.getElementById('answer-input').value.trim();
-    if (!answer) return;
-    
-    if (!currentAspect) {
-        console.error('Current aspect is undefined');
-        return;
-    }
-    
-    // Save answer
-    if (!answers[currentAspect]) {
-        answers[currentAspect] = [];
-    }
-    answers[currentAspect][currentQuestionIndex] = answer;
-    
-    // Score the answer
-    const score = scoreAnswer(answer, currentAspect);
-    
-    // Save score
-    if (!scores[currentAspect]) {
-        scores[currentAspect] = [];
-    }
-    scores[currentAspect][currentQuestionIndex] = score;
+    if (answer.length < 10) return;
 
-    showAnswerFeedback(score, currentAspect);
+    const aspect = aspects[currentAspectIndex];
+    const currentScore = scoreAnswer(answer, aspect);
+    
+    answers[aspect][currentQuestionIndex] = answer;
+    scores[aspect][currentQuestionIndex] = currentScore;
+
+    showAnswerFeedback(currentScore, aspect);
     moveToNextQuestion();
 }
 
+function showAnswerFeedback(score, aspect) {
+    const feedbackMessages = {
+        low: 'Jawaban Anda baik, coba berikan lebih banyak detail dan contoh.',
+        medium: 'Bagus! Anda menunjukkan pemahaman yang cukup baik.',
+        high: 'Luar biasa! Jawaban yang sangat mendalam dan relevan.'
+    };
+    let category = 'low';
+    if (score >= 8) category = 'high';
+    else if (score >= 5) category = 'medium';
+    const displayName = aspectDisplayNames[aspect] || capitalize(aspect);
+    console.log(`${displayName} - Skor: ${score.toFixed(1)}/10 - ${feedbackMessages[category]}`);
+}
+
 function scoreAnswer(answer, aspect) {
-    // Debug logging
-    console.log('Scoring answer for aspect:', aspect);
-    console.log('Available keywords:', Object.keys(keywords));
-    
-    // Check if aspect exists in keywords
-    if (!aspect || !keywords[aspect] || !Array.isArray(keywords[aspect])) {
-        console.error(`Cannot score answer: invalid aspect '${aspect}'`);
-        return 5; // Return a default score if aspect is invalid
-    }
-    
-    const words = answer.toLowerCase().split(/\s+/);
     const answerLower = answer.toLowerCase();
     let count = 0;
-
-    keywords[aspect].forEach(keyword => {
-        if (answerLower.includes(keyword.toLowerCase())) {
-            count++;
-        }
+    keywords[aspect].forEach(key => {
+        if (answerLower.includes(key)) count++;
     });
-    
-    const maxKeywords = keywords[aspect].length;
-    const score = maxKeywords > 0 ? Math.min(10, Math.round((count / maxKeywords) * 10)) : 5;
-    
-    console.log(`${aspect} - Skor: ${score}/10 - ${getFeedback(score)}`);
-    return score;
-}
-
-function getFeedback(score) {
-    if (score >= 9) return '👍 Luar biasa! Jawaban Anda sangat komprehensif.';
-    if (score >= 7) return '👍 Bagus! Anda menunjukkan pemahaman yang baik.';
-    if (score >= 5) return '👍 Cukup baik. Pertimbangkan untuk lebih mendalam.';
-    return 'Coba lebih rinci dalam menjawab.';
-}
-
-// Add the showAnswerFeedback function here
-function showAnswerFeedback(score, aspect) {
-    const feedback = getFeedback(score);
-    console.log(`${aspect} - Skor: ${score}/10 - ${feedback}`);
-    
-    // You can add UI feedback here if needed
-    // For example, showing a toast notification
-    const feedbackElement = document.getElementById('feedback-message');
-    if (feedbackElement) {
-        feedbackElement.textContent = feedback;
-        feedbackElement.className = `p-3 rounded-lg mb-4 ${
-            score >= 7 ? 'bg-green-100 text-green-800' : 
-            score >= 5 ? 'bg-yellow-100 text-yellow-800' : 
-            'bg-red-100 text-red-800'
-        }`;
-        feedbackElement.classList.remove('hidden');
-    }
+    const lengthBonus = Math.min(Math.floor(answer.length / 50), 3);
+    return Math.min((count * 1.5) + lengthBonus, 10);
 }
 
 function moveToNextQuestion() {
-    // Get current aspect and questions
-    const currentAspect = aspects[currentAspectIndex];
-    const currentQuestions = questions[currentAspect];
-    
-    if (!currentAspect || !currentQuestions) {
-        console.error('Invalid aspect or questions not found');
+    if (currentQuestionNumber >= totalQuestions) {
+        completeQuiz();
         return;
     }
-
-    // Save current answer if input exists
-    const answerInput = document.getElementById('answer-input');
-    if (answerInput) {
-        const answer = answerInput.value.trim();
-        if (answer) {
-            if (!answers[currentAspect]) {
-                answers[currentAspect] = [];
-            }
-            answers[currentAspect][currentQuestionIndex] = answer;
-        }
+    currentQuestionNumber++;
+    currentQuestionIndex++;
+    if (currentQuestionIndex >= questions[aspects[currentAspectIndex]].length) {
+        currentAspectIndex++;
+        currentQuestionIndex = 0;
     }
-
-    // Check if we can move to next question in current aspect
-    if (currentQuestionIndex < currentQuestions.length - 1) {
-        currentQuestionIndex++;
-        currentQuestionNumber++;
-    } else {
-        // Move to next aspect
-        if (currentAspectIndex < aspects.length - 1) {
-            currentAspectIndex++;
-            currentQuestionIndex = 0;
-            currentQuestionNumber++;
-            // Update currentAspect to the new aspect
-            currentAspect = aspects[currentAspectIndex];
-        } else {
-            // Quiz completed
-            completeQuiz();
-            return;
-        }
-    }
-    
-    // Update progress display and show next question
-    updateProgressDisplay();
     showCurrentQuestion();
 }
 
-// === FUNGSI BARU UNTUK KEMBALI ===
 function moveToPreviousQuestion() {
-    if (currentQuestionNumber <= 1) {
-        return; // Tidak bisa kembali dari soal pertama
-    }
-
+    if (currentQuestionNumber <= 1) return;
     currentQuestionNumber--;
     currentQuestionIndex--;
-
     if (currentQuestionIndex < 0) {
         currentAspectIndex--;
-        // Atur ke soal terakhir dari aspek sebelumnya
-        const prevAspect = aspects[currentAspectIndex];
-        currentQuestionIndex = questions[prevAspect].length - 1;
+        currentQuestionIndex = questions[aspects[currentAspectIndex]].length - 1;
     }
-
     showCurrentQuestion();
 }
 
-// Update the completeQuiz function to save results to history
 function completeQuiz() {
-    const results = calculateFinalResults();
-    
-    // Save to history
-    const historyEntry = {
-        date: new Date().toISOString(),
-        scores: results.aspectScores,
-        overallScore: results.overallScore,
-        category: results.overallCategory
-    };
-    
-    quizHistory.unshift(historyEntry); // Add to beginning of array
-    localStorage.setItem('quizHistory', JSON.stringify(quizHistory));
-    
-    showResults();
+    const resultsData = calculateFinalResults();
+    const historyEntry = { date: new Date().toISOString(), ...resultsData };
+    quizHistory.unshift(historyEntry);
+    localStorage.setItem('quizHistory', JSON.stringify(quizHistory.slice(0, 10)));
+    displayResults(resultsData);
 }
+
+// === FUNGSI HASIL DAN RIWAYAT ===
 
 function calculateFinalResults() {
-    const aspectScores = {};
-    let totalScore = 0;
-    let totalMaxScore = 0;
-
-    // Calculate scores for each aspect
+    const aspectScoresData = [];
     aspects.forEach(aspect => {
-        const aspectQuestions = questions[aspect] || [];
-        const aspectAnswers = answers[aspect] || [];
-        const aspectScoresList = scores[aspect] || [];
-        
-        // Calculate average score for this aspect
-        const aspectTotal = aspectScoresList.reduce((sum, score) => sum + (score || 0), 0);
-        const aspectAverage = aspectScoresList.length > 0 
-            ? (aspectTotal / aspectScoresList.length) * 10 
-            : 0;
-            
-        aspectScores[aspect] = {
-            score: Math.round(aspectAverage * 10) / 10, // Round to 1 decimal place
-            maxScore: 100,
-            category: getScoreCategory(aspectAverage)
-        };
-        
-        totalScore += aspectAverage * aspectQuestions.length;
-        totalMaxScore += 100 * aspectQuestions.length;
+        let score = 0;
+        if (scores[aspect] && scores[aspect].length > 0) {
+            const sum = scores[aspect].reduce((a, b) => a + b, 0);
+            score = (sum / (scores[aspect].length * 10)) * 100;
+        }
+        aspectScoresData.push({ aspect, score });
     });
-    
-    // Calculate overall score
-    const overallScore = totalMaxScore > 0 
-        ? Math.round((totalScore / totalMaxScore) * 1000) / 10 
-        : 0;
-    
+    const totalScore = aspectScoresData.reduce((sum, item) => sum + item.score, 0);
+    const finalScore = aspectScoresData.length > 0 ? totalScore / aspectScoresData.length : 0;
     return {
-        aspectScores,
-        overallScore,
-        overallCategory: getScoreCategory(overallScore),
-        timestamp: new Date().toISOString()
+        aspectScores: aspectScoresData,
+        overallScore: finalScore,
+        overallCategory: getScoreCategory(finalScore)
     };
 }
 
-function showResults() {
-    const resultsModal = document.getElementById('results-modal');
-    const resultsContent = document.getElementById('results-content');
-    const historyTab = document.getElementById('history-tab');
-    
-    if (!resultsModal || !resultsContent || !historyTab) {
-        console.error('Required elements not found in the DOM');
-        return;
-    }
+function displayResults(resultsData) {
+    const { aspectScores, overallScore, overallCategory } = resultsData;
+    document.getElementById('results-modal').classList.remove('hidden');
+    showResultsTab();
+    document.getElementById('overall-score').textContent = `${overallScore.toFixed(0)}/100`;
+    document.getElementById('overall-category').textContent = overallCategory;
+    document.getElementById('overall-interpretation').textContent = getFinalInterpretation(aspectScores);
 
-    resultsModal.classList.remove('hidden');
-    resultsContent.classList.remove('hidden');
-    historyTab.classList.add('hidden');
-    
-    const results = calculateFinalResults();
-    
-    const aspectScores = [];
-    const aspectLabels = [];
-    let totalScore = 0;
-    let totalMaxScore = 0;
-    
-    const detailedResults = document.getElementById('detailed-results');
-    if (detailedResults) {
-        detailedResults.innerHTML = '';
-    }
-
-    aspects.forEach(aspect => {
-        if (scores[aspect] && scores[aspect].length > 0) {
-            const sum = scores[aspect].reduce((a, b) => a + b, 0);
-            const maxScore = scores[aspect].length * 10;
-            const percentage = (sum / maxScore) * 100;
-            const category = getScoreCategory(percentage);
-            
-            totalScore += sum;
-            totalMaxScore += maxScore;
-            
-            aspectScores.push(percentage);
-            aspectLabels.push(capitalize(aspect));
-            
-            if (detailedResults) {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200';
-                resultItem.innerHTML = `
-                    <div>
-                        <span class="font-medium text-gray-800">${capitalize(aspect)}</span>
-                        <div class="text-xs text-gray-500">${scores[aspect].length} soal dijawab</div>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-lg font-bold text-indigo-600">${percentage.toFixed(1)}%</span>
-                        <div class="text-sm ${getCategoryColor(category)}">${category}</div>
-                    </div>
-                `;
-                detailedResults.appendChild(resultItem);
-            }
-        }
+    const detailedResultsContainer = document.getElementById('detailed-results');
+    detailedResultsContainer.innerHTML = '';
+    aspectScores.forEach(data => {
+        const category = getScoreCategory(data.score);
+        const displayName = aspectDisplayNames[data.aspect] || capitalize(data.aspect);
+        detailedResultsContainer.innerHTML += `
+            <div class="flex justify-between items-start p-3 bg-gray-50 rounded-lg border">
+                <div class="flex-1 pr-4">
+                    <span class="font-medium text-gray-800">${displayName}</span>
+                    <p class="text-xs text-gray-500 mt-1">${getAspectInterpretation(data.aspect, data.score)}</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <span class="text-lg font-bold text-indigo-600">${data.score.toFixed(0)}/100</span>
+                    <div class="text-sm font-semibold ${getCategoryColor(category)}">${category}</div>
+                </div>
+            </div>`;
     });
 
-    const finalScore = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-    const overallScore = document.getElementById('overall-score');
-    const overallInterpretation = document.getElementById('overall-interpretation');
-    
-    if (overallScore) {
-        overallScore.textContent = `${finalScore.toFixed(1)}%`;
-    }
-    
-    if (overallInterpretation) {
-        overallInterpretation.textContent = getScoreInterpretation(finalScore);
-    }
+    setTimeout(() => {
+        drawResultsChart(aspectScores.map(d => aspectDisplayNames[d.aspect]), aspectScores.map(d => d.score));
+    }, 150);
+}
 
-    updateChart(aspectLabels, aspectScores);
+function showQuizHistory() {
+    document.getElementById('results-content').classList.add('hidden');
+    document.getElementById('history-content').classList.remove('hidden');
+    document.getElementById('results-tab-btn').classList.remove('border-indigo-500', 'text-indigo-600');
+    document.getElementById('history-tab-btn').classList.add('border-indigo-500', 'text-indigo-600');
+
+    const container = document.getElementById('quiz-history-container');
+    container.innerHTML = quizHistory.length === 0 ? `<p class="text-center text-gray-500">Tidak ada riwayat tes.</p>` :
+        quizHistory.map((attempt, index) => {
+            const date = new Date(attempt.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            return `
+                <div class="p-4 border rounded-lg hover:bg-gray-50">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-semibold">Tes Selesai: ${date}</p>
+                            <p class="text-sm text-gray-600">Skor Akhir: <span class="font-bold">${attempt.overallScore.toFixed(0)}/100</span> (${attempt.overallCategory})</p>
+                        </div>
+                        <button onclick="displayResults(quizHistory[${index}])" class="text-indigo-600 hover:underline text-sm font-medium">Lihat Detail</button>
+                    </div>
+                </div>`;
+        }).join('');
+}
+
+function showResultsTab() {
+    document.getElementById('history-content').classList.add('hidden');
+    document.getElementById('results-content').classList.remove('hidden');
+    document.getElementById('history-tab-btn').classList.remove('border-indigo-500', 'text-indigo-600');
+    document.getElementById('results-tab-btn').classList.add('border-indigo-500', 'text-indigo-600');
 }
 
 function getScoreCategory(score) {
-    if (score <= 25) return "Perlu Perbaikan";
-    if (score <= 50) return "Cukup Baik";
-    if (score <= 75) return "Baik";
+    if (score <= 40) return "Kurang";
+    if (score <= 60) return "Cukup";
+    if (score <= 80) return "Baik";
     return "Sangat Baik";
 }
 
 function getCategoryColor(category) {
-    const colors = {
-        'Sangat Baik': '#2E7D32',  // Hijau
-        'Baik': '#689F38',         // Hijau Muda
-        'Cukup': '#FFA000',        // Kuning
-        'Kurang': '#FF6D00',       // Orange
-        'Sangat Kurang': '#D32F2F' // Merah
+    const colors = { "Kurang": "text-red-600", "Cukup": "text-yellow-600", "Baik": "text-blue-600", "Sangat Baik": "text-green-600" };
+    return colors[category] || "text-gray-600";
+}
+
+function getAspectInterpretation(aspect, score) {
+    const interpretations = {
+        empati: { Kurang: "Perlu lebih peka dalam mengenali dan merespons perasaan orang di sekitar Anda.", Cukup: "Sudah mulai bisa memahami perasaan orang lain, tingkatkan inisiatif untuk membantu.", Baik: "Cukup baik dalam berempati. Terus asah kepekaan pada isyarat non-verbal.", "Sangat Baik": "Sangat baik dalam memahami dan merasakan apa yang orang lain rasakan." },
+        hatiNurani: { Kurang: "Perlu penguatan pada prinsip kejujuran dan tanggung jawab atas tindakan.", Cukup: "Mulai menunjukkan integritas, namun perlu lebih konsisten dalam menepati janji.", Baik: "Memiliki hati nurani yang baik. Pertahankan untuk selalu bertindak benar.", "Sangat Baik": "Sangat menjunjung tinggi kejujuran dan berani bertanggung jawab." },
+        pengendalianDiri: { Kurang: "Cenderung impulsif. Latih kesabaran dan berpikir sebelum bertindak.", Cukup: "Sudah bisa menahan diri dalam beberapa situasi, namun mudah terpancing emosi.", Baik: "Mampu mengelola emosi dan dorongan dengan cukup baik.", "Sangat Baik": "Sangat baik dalam mengendalikan diri, bahkan di bawah tekanan." },
+        hormat: { Kurang: "Perlu belajar cara menghargai orang lain melalui tutur kata dan perbuatan.", Cukup: "Kadang masih kurang sopan. Biasakan menggunakan kata 'tolong', 'maaf', 'terima kasih'.", Baik: "Menunjukkan sikap hormat yang baik kepada orang lain.", "Sangat Baik": "Sangat santun dan mampu menghargai perbedaan pendapat." },
+        kebaikanHati: { Kurang: "Tingkatkan keinginan untuk menolong orang lain tanpa mengharap imbalan.", Cukup: "Sudah mau membantu jika diminta, coba untuk lebih proaktif menawarkan bantuan.", Baik: "Memiliki sifat penolong dan baik hati. Terus sebarkan energi positif.", "Sangat Baik": "Sangat murah hati dan tulus dalam membantu sesama." },
+        toleransi: { Kurang: "Cenderung sulit menerima perbedaan. Buka diri untuk belajar dari orang lain.", Cukup: "Masih sering menilai orang dari latar belakangnya. Fokus pada kesamaan.", Baik: "Mampu menghargai dan menerima perbedaan dengan baik.", "Sangat Baik": "Sangat terbuka dan menghormati keberagaman dalam masyarakat." },
+        keadilan: { Kurang: "Seringkali tidak sabar dan ingin menang sendiri. Belajar untuk adil dan sportif.", Cukup: "Sudah mau berbagi, namun perlu belajar berkompromi untuk kebaikan bersama.", Baik: "Memiliki prinsip keadilan yang baik dan tidak memihak.", "Sangat Baik": "Sangat adil, sportif, dan selalu mempertimbangkan hak orang lain." }
     };
-    return colors[category] || '#000000';
+    return interpretations[aspect][getScoreCategory(score)] || "Terus kembangkan aspek ini.";
 }
 
-function getScoreInterpretation(score) {
-    if (score <= 25) return "Anda memiliki potensi besar untuk mengembangkan moral intelligence. Mari fokus pada empati dan kejujuran sebagai langkah awal.";
-    if (score <= 50) return "Moral intelligence Anda sudah cukup baik, namun masih ada ruang untuk peningkatan dalam memahami dan merespons orang lain.";
-    if (score <= 75) return "Anda menunjukkan moral intelligence yang baik. Terus kembangkan aspek-aspek yang masih perlu diperkuat.";
-    return "Selamat! Anda memiliki moral intelligence yang sangat baik. Pertahankan dan terus jadilah teladan bagi orang lain.";
+function getFinalInterpretation(aspectScores) {
+    if (!aspectScores || aspectScores.length === 0) return "Tidak ada data untuk diinterpretasi.";
+    const sortedScores = [...aspectScores].sort((a, b) => b.score - a.score);
+    const strengths = sortedScores.slice(0, 2).map(item => aspectDisplayNames[item.aspect] || capitalize(item.aspect));
+    const weakness = sortedScores.slice(-1)[0];
+    if (!weakness) return "Analisis belum dapat ditampilkan.";
+    const balance = Math.max(...sortedScores.map(i => i.score)) - Math.min(...sortedScores.map(i => i.score));
+    let mainProfile = balance < 25 ? "Profil moral intelligence Anda secara umum cukup seimbang. " : "Profil Anda menunjukkan adanya kekuatan dan area pengembangan yang jelas. ";
+    return `${mainProfile}Kekuatan utama Anda ada pada aspek ${strengths.join(' dan ')}. Aspek yang perlu menjadi fokus pengembangan adalah ${aspectDisplayNames[weakness.aspect] || capitalize(weakness.aspect)}.`;
 }
 
-function updateChart(ctx, labels, data) {
-    // Validate input parameters
-    if (!ctx || !ctx.getContext) {
-        console.error('Invalid canvas element or context not supported');
+function drawResultsChart(labels, data) {
+    const canvas = document.getElementById('results-chart');
+    if (!canvas) return;
+    if (radarChartInstance) radarChartInstance.destroy();
+    radarChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Skor (%)', data: data, fill: true,
+                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                borderColor: 'rgb(99, 102, 241)',
+                pointBackgroundColor: 'rgb(99, 102, 241)',
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { r: { beginAtZero: true, max: 100, pointLabels: { font: { size: 12 } } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// === FUNGSI EKSPOR DAN INTERAKSI LAINNYA ===
+
+async function exportToWord() {
+    const participantName = prompt("Silakan masukkan nama Anda untuk laporan:", "Peserta Tes");
+    if (!participantName) { // Jika pengguna membatalkan prompt
+        alert("Pembuatan laporan dibatalkan.");
         return;
     }
 
-    // Ensure the canvas is visible
-    ctx.style.display = 'block';
-    ctx.width = ctx.parentElement.offsetWidth;
-    ctx.height = ctx.parentElement.offsetHeight;
-    
-    // If there's an existing chart, destroy it first
-    if (window.resultsChart) {
-        window.resultsChart.destroy();
-    }
+    const exportBtn = document.querySelector('button[onclick="exportToWord()"]');
+    const originalBtnText = exportBtn.textContent;
+    exportBtn.disabled = true;
+    exportBtn.textContent = 'Memproses...';
 
     try {
-        // Create new chart
-        window.resultsChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Skor Aspek',
-                    data: data,
-                    backgroundColor: 'rgba(79, 70, 229, 0.2)',
-                    borderColor: 'rgba(79, 70, 229, 1)',
-                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(79, 70, 229, 1)',
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    r: {
-                        angleLines: {
-                            display: true,
-                            color: 'rgba(0, 0, 0, 0.1)'
-                        },
-                        suggestedMin: 0,
-                        suggestedMax: 100,
-                        ticks: {
-                            stepSize: 20,
-                            backdropColor: 'transparent',
-                            color: 'rgba(0, 0, 0, 0.7)',
-                            font: {
-                                size: 10
-                            }
-                        },
-                        pointLabels: {
-                            font: {
-                                size: 13,
-                                weight: 'bold'
-                            },
-                            color: '#374151'
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        padding: 12,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.raw}%`;
-                            }
-                        }
-                    }
-                },
-                elements: {
-                    line: {
-                        tension: 0.1
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Failed to create chart:', error);
-    }
-}
+        const results = calculateFinalResults();
+        const { aspectScores, overallScore, overallCategory } = results;
+        const canvas = document.getElementById('results-chart');
+        const chartImage = canvas.toDataURL("image/png");
 
-// === Helper Functions for Chat Integration ===
-function getCurrentQuestion() {
-    if (currentAspectIndex >= aspects.length) return null;
-    
-    const aspect = aspects[currentAspectIndex];
-    const question = questions[aspect][currentQuestionIndex];
-    const relevantKeywords = keywords[aspect].slice(0, 10).join(', ');
-    
-    return {
-        aspect: aspect,
-        question: question,
-        keywords: relevantKeywords,
-        questionNumber: currentQuestionNumber,
-        totalQuestions: totalQuestions
-    };
-}
-
-function getCurrentAspectName() {
-    if (currentAspectIndex >= aspects.length) return null;
-    return aspects[currentAspectIndex];
-}
-
-function getQuizProgress() {
-    if (!isQuizStarted) {
-        return "Quiz belum dimulai. Silakan mulai menjawab soal untuk melihat progress.";
-    }
-    
-    if (Object.keys(scores).length === 0) {
-        return "Anda belum menjawab soal apapun. Silakan kembali ke mode quiz dan mulai menjawab!";
-    }
-    
-    let message = "📊 **Progress Quiz Anda:**\n\n";
-    let totalAnswered = 0;
-    let totalScore = 0;
-    let totalMaxScore = 0;
-    
-    aspects.forEach(aspect => {
-        if (scores[aspect] && scores[aspect].length > 0) {
-            const sum = scores[aspect].reduce((a, b) => a + b, 0);
-            const maxScore = scores[aspect].length * 10;
-            const percentage = (sum / maxScore) * 100;
-            const category = getScoreCategory(percentage);
-            
-            message += `**${capitalize(aspect)}:** ${scores[aspect].length} soal → ${percentage.toFixed(1)}% (${category})\n`;
-            totalAnswered += scores[aspect].length;
-            totalScore += sum;
-            totalMaxScore += maxScore;
-        }
-    });
-    
-    const overallPercentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-    
-    message += `\n**Total Progres:**\n`;
-    message += `• Soal dijawab: ${totalAnswered} dari ${totalQuestions}\n`;
-    message += `• Kemajuan: ${((totalAnswered / totalQuestions) * 100).toFixed(1)}%\n`;
-    
-    if (totalAnswered > 0) {
-        message += `• Skor rata-rata: ${overallPercentage.toFixed(1)}%\n`;
-        message += `• Kategori: ${getScoreCategory(overallPercentage)}`;
-    }
-    
-    return message;
-}
-
-// === Quick Actions ===
-function quickAskAI() {
-    if (typeof switchMode === 'function') {
-        switchMode('chat');
-        
-        const currentQ = getCurrentQuestion();
-        if (currentQ && typeof handleChatInteraction === 'function') {
-            const message = `Saya kesulitan menjawab pertanyaan ini. Bisa bantu berikan panduan?\n\n**Pertanyaan ${currentQ.questionNumber}** (Aspek: ${capitalize(currentQ.aspect)}):\n"${currentQ.question}"\n\nBagaimana cara menjawab yang baik?`;
-            
-            // Add slight delay to ensure UI is ready
-            setTimeout(() => {
-                handleChatInteraction(message);
-            }, 300);
-        }
-    } else {
-        alert('Fitur chat AI tidak tersedia. Silakan gunakan tips berikut:\n\n1. Berikan contoh konkret dari pengalaman Anda\n2. Jelaskan perasaan dan motivasi Anda\n3. Ceritakan dampak positif dari tindakan Anda\n4. Gunakan kata-kata yang menunjukkan empati dan kepedulian');
-    }
-}
-
-function explainCurrentAspect() {
-    const currentAspect = getCurrentAspectName();
-    if (!currentAspect) return;
-    
-    if (typeof switchMode === 'function') {
-        switchMode('chat');
-        
-        const message = `Tolong jelaskan aspek "${capitalize(currentAspect)}" dalam moral intelligence secara detail beserta contoh praktisnya dalam kehidupan sehari-hari.`;
-        
-        setTimeout(() => {
-            if (typeof handleChatInteraction === 'function') {
-                handleChatInteraction(message);
-            }
-        }, 300);
-    } else {
-        const explanations = {
-            empati: "Empati adalah kemampuan memahami dan merasakan perasaan orang lain. Contoh: mendengarkan dengan perhatian saat teman bercerita tentang masalahnya.",
-            hatiNurani: "Hati nurani adalah suara moral internal yang membantu membedakan benar dan salah. Contoh: mengakui kesalahan dan meminta maaf dengan tulus.",
-            pengendalianDiri: "Pengendalian diri adalah kemampuan mengatur emosi dan perilaku. Contoh: tetap tenang dan tidak marah saat dikritik.",
-            hormat: "Hormat adalah sikap menghargai diri sendiri dan orang lain. Contoh: mendengarkan pendapat orang lain tanpa menyela.",
-            kebaikanHati: "Kebaikan hati adalah kecenderungan berbuat baik tanpa pamrih. Contoh: membantu orang lain tanpa mengharapkan imbalan.",
-            toleransi: "Toleransi adalah kemampuan menerima perbedaan. Contoh: menghormati teman yang memiliki kepercayaan berbeda.",
-            keadilan: "Keadilan adalah prinsip memperlakukan semua orang secara setara. Contoh: tidak pilih kasih dalam memberikan kesempatan."
+        const payload = {
+            participantName: participantName, // [PERUBAHAN] Menambahkan nama ke data
+            overallScore: overallScore.toFixed(0),
+            scoreCategory: overallCategory,
+            scoreInterpretation: getFinalInterpretation(aspectScores),
+            aspects: Object.fromEntries(aspectScores.map(d => [d.aspect, d.score])),
+            aspectCategories: Object.fromEntries(aspectScores.map(d => [d.aspect, getScoreCategory(d.score)])),
+            chartImage: chartImage
         };
+
+        const response = await fetch('http://127.0.0.1:8000/api/export-word', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
         
-        alert(explanations[currentAspect] || "Aspek moral intelligence yang penting untuk karakter.");
+        const disposition = response.headers.get('content-disposition');
+        let filename = `Hasil_Tes_Moral_Intelligence.docx`;
+        if (disposition && disposition.includes('attachment')) {
+            const filenameMatch = disposition.match(/filename="(.+?)"/);
+            if (filenameMatch && filenameMatch.length > 1) filename = filenameMatch[1];
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+    } catch (error) {
+        console.error('Gagal mengekspor ke Word:', error);
+        alert('Gagal membuat dokumen Word. Pastikan server Python (main.py) sudah berjalan pada http://127.0.0.1:8000.');
+    } finally {
+        exportBtn.disabled = false;
+        exportBtn.textContent = originalBtnText;
     }
 }
 
-// === Results Actions ===
+
 function closeResults() {
-    const modal = document.getElementById('results-modal');
-    if (modal) {
-        modal.classList.add('hidden');
+    document.getElementById('results-modal').classList.add('hidden');
+}
+
+function restartQuiz() {
+    if (confirm('Apakah Anda yakin ingin mengulang quiz? Progres saat ini akan hilang.')) {
+        closeResults();
+        initializeQuiz();
+        if (typeof switchMode === 'function') switchMode('quiz');
     }
 }
 
 function discussResults() {
     closeResults();
+    if (typeof switchMode !== 'function' || typeof addMessageToChat !== 'function') return;
     
-    if (typeof switchMode === 'function') {
-        switchMode('chat');
-        
-        // Generate comprehensive results summary for AI discussion
-        const resultsMessage = generateResultsSummaryForAI();
-        
-        setTimeout(() => {
-            if (typeof addMessageToChat === 'function') {
-                addMessageToChat('Diskusikan hasil quiz saya', 'user');
-                addMessageToChat(resultsMessage, 'ai');
-            } else if (typeof handleChatInteraction === 'function') {
-                handleChatInteraction('Saya sudah menyelesaikan quiz moral intelligence. Bisa bantu analisis hasil dan berikan saran pengembangan?');
-            }
-        }, 300);
-    }
+    switchMode('chat');
+    setTimeout(() => {
+        addMessageToChat('Bantu saya menganalisis hasil quiz ini.', 'user');
+        addMessageToChat(generateResultsSummaryForAI(), 'ai');
+    }, 300);
 }
 
 function generateResultsSummaryForAI() {
-    let message = "🎯 **Hasil Quiz Moral Intelligence Anda:**\n\n";
-    
-    let totalScore = 0;
-    let totalMaxScore = 0;
-    const aspectAnalysis = [];
-    
-    aspects.forEach(aspect => {
-        if (scores[aspect] && scores[aspect].length > 0) {
-            const sum = scores[aspect].reduce((a, b) => a + b, 0);
-            const maxScore = scores[aspect].length * 10;
-            const percentage = (sum / maxScore) * 100;
-            const category = getScoreCategory(percentage);
-            
-            totalScore += sum;
-            totalMaxScore += maxScore;
-            
-            message += `**${capitalize(aspect)}:** ${percentage.toFixed(1)}% → ${category}\n`;
-            
-            if (percentage < 50) {
-                aspectAnalysis.push(`${capitalize(aspect)} perlu diperkuat`);
-            } else if (percentage >= 75) {
-                aspectAnalysis.push(`${capitalize(aspect)} sudah sangat baik`);
-            }
-        }
+    const { aspectScores } = calculateFinalResults();
+    let message = "🎯 **Ringkasan hasil quiz Anda:**\n\n";
+    aspectScores.forEach(data => {
+        const displayName = aspectDisplayNames[data.aspect] || capitalize(data.aspect);
+        message += `**${displayName}:** ${data.score.toFixed(0)}/100 (${getScoreCategory(data.score)})\n`;
     });
-    
-    const finalScore = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-    message += `\n**Skor Keseluruhan:** ${finalScore.toFixed(1)}%\n`;
-    message += `**Interpretasi:** ${getScoreInterpretation(finalScore)}\n\n`;
-    
-    if (aspectAnalysis.length > 0) {
-        message += `**Analisis Singkat:**\n${aspectAnalysis.join('\n')}\n\n`;
-    }
-    
-    message += "Bagaimana menurut Anda? Ada aspek tertentu yang ingin kita bahas lebih dalam? Saya bisa memberikan tips praktis untuk pengembangan karakter moral.";
-    
+    message += `\n**Interpretasi Keseluruhan:**\n${getFinalInterpretation(aspectScores)}\n\n`;
+    message += "Apakah ada aspek tertentu yang ingin Anda diskusikan lebih dalam?";
     return message;
 }
 
-function downloadResults() {
-    // Simple implementation - could be enhanced with actual PDF generation
-    const resultsText = generateTextReport();
-    const blob = new Blob([resultsText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Hasil-Quiz-Moral-Intelligence-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function generateTextReport() {
-    let report = "LAPORAN HASIL QUIZ MORAL INTELLIGENCE\n";
-    report += "=====================================\n\n";
-    report += `Tanggal: ${new Date().toLocaleDateString('id-ID')}\n`;
-    report += `Total Soal: ${totalQuestions}\n\n`;
-    
-    report += "DETAIL SKOR PER ASPEK:\n";
-    report += "----------------------\n";
-    
-    let totalScore = 0;
-    let totalMaxScore = 0;
-    
-    aspects.forEach(aspect => {
-        if (scores[aspect] && scores[aspect].length > 0) {
-            const sum = scores[aspect].reduce((a, b) => a + b, 0);
-            const maxScore = scores[aspect].length * 10;
-            const percentage = (sum / maxScore) * 100;
-            const category = getScoreCategory(percentage);
-            
-            totalScore += sum;
-            totalMaxScore += maxScore;
-            
-            report += `${capitalize(aspect).padEnd(20)}: ${percentage.toFixed(1)}% (${category})\n`;
-        }
-    });
-    
-    const finalScore = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-    report += "\nSKOR KESELURUHAN:\n";
-    report += "-----------------\n";
-    report += `Total Skor: ${finalScore.toFixed(1)}%\n`;
-    report += `Kategori: ${getScoreCategory(finalScore)}\n\n`;
-    report += `Interpretasi: ${getScoreInterpretation(finalScore)}\n\n`;
-    
-    report += "REKOMENDASI PENGEMBANGAN:\n";
-    report += "------------------------\n";
-    
-    aspects.forEach(aspect => {
-        if (scores[aspect] && scores[aspect].length > 0) {
-            const sum = scores[aspect].reduce((a, b) => a + b, 0);
-            const maxScore = scores[aspect].length * 10;
-            const percentage = (sum / maxScore) * 100;
-            
-            if (percentage < 50) {
-                report += `- Fokus mengembangkan aspek ${capitalize(aspect)}\n`;
-            }
-        }
-    });
-    
-    return report;
-}
-
-function restartQuiz() {
-    if (confirm('Apakah Anda yakin ingin mengulang quiz? Semua jawaban sebelumnya akan hilang.')) {
-        // Reset quiz state
-        currentAspectIndex = 0;
-        currentQuestionIndex = 0;
-        currentQuestionNumber = 1;
-        answers = {};
-        scores = {};
-        
-        closeResults();
-        showCurrentQuestion();
-        
-        if (typeof switchMode === 'function') {
-            switchMode('quiz');
-        }
-    }
-}
-
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function exportToWord() {
-    try {
-        const results = calculateFinalResults();
-        if (!results) {
-            throw new Error('No results to export');
-        }
-
-        // Get aspect scores and labels
-        const aspectScores = [];
-        const aspectLabels = [];
-        
-        // Calculate scores for each aspect
-        aspects.forEach(aspect => {
-            if (scores[aspect] && scores[aspect].length > 0) {
-                const sum = scores[aspect].reduce((a, b) => a + (b || 0), 0);
-                const maxScore = scores[aspect].length * 10;
-                const percentage = maxScore > 0 ? (sum / maxScore) * 100 : 0;
-                
-                aspectScores.push(percentage);
-                aspectLabels.push(aspectDisplayNames[aspect] || capitalize(aspect));
-            }
-        });
-
-        // Calculate overall score
-        const totalScore = aspectScores.reduce((sum, score) => sum + score, 0);
-        const overallScore = aspectScores.length > 0 ? totalScore / aspectScores.length : 0;
-        const overallCategory = getScoreCategory(overallScore);
-
-        // Create HTML content for Word document
-        let html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; }
-                    h1 { color: #1a365d; }
-                    h2 { color: #2c5282; margin-top: 20px; }
-                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    .score { font-weight: bold; }
-                </style>
-            </head>
-            <body>
-                <h1>Hasil Tes Kecerdasan Moral</h1>
-                <p>Tanggal: ${new Date().toLocaleDateString('id-ID')}</p>
-                
-                <h2>Ringkasan Hasil</h2>
-                <p>Skor Keseluruhan: <span class="score">${overallScore.toFixed(1)}%</span> (${overallCategory})</p>
-                
-                <h2>Detail Aspek</h2>
-                <table>
-                    <tr>
-                        <th>Aspek</th>
-                        <th>Skor</th>
-                        <th>Kategori</th>
-                    </tr>
-        `;
-
-        // Add aspect scores to the table
-        aspectLabels.forEach((label, index) => {
-            const score = aspectScores[index];
-            const category = getScoreCategory(score);
-            html += `
-                <tr>
-                    <td>${label}</td>
-                    <td>${score.toFixed(1)}%</td>
-                    <td>${category}</td>
-                </tr>
-            `;
-        });
-
-        // Close the HTML
-        html += `
-                </table>
-                <p>Interpretasi: ${getScoreInterpretation(overallScore)}</p>
-            </body>
-            </html>
-        `;
-
-        // Create a Blob with the HTML content
-        const blob = new Blob(
-            ['\ufeff', html], // Add BOM for UTF-8
-            { type: 'application/msword;charset=utf-8' }
-        );
-
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `hasil-tes-kecerdasan-moral-${new Date().toISOString().split('T')[0]}.doc`;
-        
-        // Trigger download
-        document.body.appendChild(a);
-        a.click();
-        
-        // Clean up
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-    } catch (error) {
-        console.error('Export error:', error);
-        alert('Gagal mengekspor ke Word. Silakan coba lagi nanti.');
-    }
-}
-
-// === Global Functions ===
-window.getCurrentQuestion = getCurrentQuestion;
-window.getCurrentAspectName = getCurrentAspectName;
-window.getQuizProgress = getQuizProgress;
-window.quickAskAI = quickAskAI;
-window.explainCurrentAspect = explainCurrentAspect;
-window.closeResults = closeResults;
-window.discussResults = discussResults;
-window.downloadResults = downloadResults;
-window.restartQuiz = restartQuiz;
-window.initializeQuiz = initializeQuiz;
-window.exportToWord = exportToWord;
-window.showResultsTab = showResultsTab;
-window.showQuizHistory = showQuizHistory;
-window.showHistoryAttempt = showHistoryAttempt;
-
-
-// Add this function to display history
-function showQuizHistory() {
-    const historyContainer = document.getElementById('quiz-history-container');
-    if (!historyContainer) return;
-    
-    if (quizHistory.length === 0) {
-        historyContainer.innerHTML = '<p class="text-gray-500">Belum ada riwayat kuis</p>';
+// Fungsi ini dipanggil saat tombol "Tanya AI tentang pertanyaan ini" diklik
+function quickAskAI() {
+    // Periksa apakah fungsi dari chat-logic.js tersedia
+    if (typeof window.switchMode !== 'function' || typeof window.handleChatInteraction !== 'function') {
+        alert("Fitur chat tidak dapat dimuat.");
         return;
     }
     
-    historyContainer.innerHTML = quizHistory.map((attempt, index) => {
-        const date = new Date(attempt.date);
-        const formattedDate = date.toLocaleString('id-ID');
-        
-        return `
-            <div class="bg-white rounded-xl shadow-md p-4 mb-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-semibold">Percobaan #${quizHistory.length - index}</h3>
-                    <span class="text-sm text-gray-500">${formattedDate}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-2xl font-bold">${attempt.overallScore}/100</span>
-                        <span class="ml-2 px-2 py-1 rounded-full text-xs ${getCategoryColor(attempt.category)}">
-                            ${attempt.category}
-                        </span>
-                    </div>
-                    <button onclick="showHistoryAttempt(${index})" class="text-indigo-600 hover:text-indigo-800">
-                        Lihat Detail
-                    </button>
-                </div>
-                <div id="history-chart-${index}" class="mt-3" style="height: 200px;"></div>
-            </div>
-        `;
-    }).join('');
+    // Pindah ke mode chat
+    window.switchMode('chat');
     
-    // Draw charts for each history entry
-    quizHistory.forEach((attempt, index) => {
-        if (document.getElementById(`history-chart-${index}`)) {
-            drawHistoryChart(attempt, index);
-        }
-    });
-}
-
-// Add this function to draw charts for history entries
-function drawHistoryChart(attempt, index) {
-    const ctx = document.createElement('canvas');
-    document.getElementById(`history-chart-${index}`).appendChild(ctx);
-    
-    const labels = Object.keys(attempt.scores);
-    const data = Object.values(attempt.scores);
-    
-    new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Skor Aspek',
-                data: data,
-                backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                borderColor: 'rgba(99, 102, 241, 1)',
-                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
-            }]
-        },
-        options: {
-            scales: {
-                r: {
-                    angleLines: { display: true },
-                    suggestedMin: 0,
-                    suggestedMax: 100
-                }
-            }
-        }
-    });
-}
-
-// Add this function to handle showing the results tab
-function showResultsTab() {
-    document.getElementById('results-content').classList.remove('hidden');
-    document.getElementById('history-tab').classList.add('hidden');
-    // Update active tab styling
-    document.getElementById('results-tab-btn').classList.add('text-indigo-600', 'border-indigo-600');
-    document.getElementById('results-tab-btn').classList.remove('text-gray-500');
-    document.getElementById('history-tab-btn').classList.remove('text-indigo-600', 'border-indigo-600');
-    document.getElementById('history-tab-btn').classList.add('text-gray-500');
-}
-
-// Add this function to show a specific attempt in detail
-function showHistoryAttempt(index) {
-    const attempt = quizHistory[index];
-    if (!attempt) return;
-    
-    // Update the results modal with history data
-    document.getElementById('overall-score').textContent = attempt.overallScore + '/100';
-    document.getElementById('overall-category').textContent = attempt.category;
-    
-    // Show the results modal
-    document.getElementById('results-modal').classList.remove('hidden');
-    
-    // Update the chart
-    const ctx = document.getElementById('results-chart');
-    if (ctx) {
-        // Clear previous chart if exists
-        if (window.resultsChart) {
-            window.resultsChart.destroy();
-        }
-        
-        // Draw new chart
-        const labels = Object.keys(attempt.scores);
-        const data = Object.values(attempt.scores);
-        
-        window.resultsChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Skor Aspek',
-                    data: data,
-                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        angleLines: { display: true },
-                        suggestedMin: 0,
-                        suggestedMax: 100
-                    }
-                }
-            }
-        });
+    // Siapkan pesan dan kirim ke AI
+    const currentQ = getCurrentQuestion();
+    if (currentQ) {
+        const message = `Tolong bantu saya memahami dan berikan panduan untuk menjawab pertanyaan ini:\n\n"${currentQ.question}"`;
+        // Beri jeda sedikit agar transisi UI selesai sebelum mengirim pesan
+        setTimeout(() => {
+            window.handleChatInteraction(message);
+        }, 100);
     }
 }
 
-// Initialize the quiz when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeQuiz();
-    setupQuizEventListeners();
-    
-    // Set initial back button state
-    const prevBtn = document.getElementById('prev-question-btn');
-    if (prevBtn) {
-        prevBtn.style.display = 'none'; // Hide on first question
+// Fungsi ini dipanggil saat tombol "Penjelasan aspek" diklik
+function explainCurrentAspect() {
+    if (typeof window.switchMode !== 'function' || typeof window.handleChatInteraction !== 'function') {
+        alert("Fitur chat tidak dapat dimuat.");
+        return;
     }
 
-    // Load history if needed
-    if (document.getElementById('quiz-history-container')) {
-        showQuizHistory();
+    // Pindah ke mode chat
+    window.switchMode('chat');
+
+    // Siapkan pesan dan kirim ke AI
+    const currentAspectName = aspectDisplayNames[aspects[currentAspectIndex]] || capitalize(aspects[currentAspectIndex]);
+    if (currentAspectName) {
+        const message = `Tolong jelaskan aspek "${currentAspectName}" dalam moral intelligence dan berikan contohnya.`;
+        setTimeout(() => {
+            window.handleChatInteraction(message);
+        }, 100);
     }
-});
+}
+
+// Helper function untuk mendapatkan info soal saat ini
+function getCurrentQuestion() {
+    if (currentAspectIndex >= aspects.length) return null;
+    const aspect = aspects[currentAspectIndex];
+    return {
+        aspect: aspect,
+        question: questions[aspect][currentQuestionIndex],
+    };
+}
+
+function generateAspectExplanation() {
+    const aspectKey = aspects[currentAspectIndex];
+    const aspectName = aspectDisplayNames[aspectKey] || capitalize(aspectKey);
+    const explanations = {
+        empati: `**${aspectName}** adalah kemampuan untuk memahami dan merasakan perasaan orang lain dari sudut pandang mereka. Contohnya adalah menghibur teman yang sedang sedih.`,
+        hatiNurani: `**${aspectName}** adalah panduan internal tentang benar dan salah. Contohnya adalah merasa bersalah dan meminta maaf setelah melakukan kesalahan.`,
+        pengendalianDiri: `**${aspectName}** adalah kemampuan untuk mengontrol emosi dan tindakan. Contohnya adalah tetap tenang saat marah dan tidak bertindak gegabah.`,
+        hormat: `**${aspectName}** adalah sikap menghargai diri sendiri, orang lain, dan lingkungan sekitar. Contohnya adalah mendengarkan pendapat orang lain tanpa menyela.`,
+        kebaikanHati: `**${aspectName}** adalah kecenderungan untuk berbuat baik dan menolong sesama tanpa pamrih. Contohnya adalah membantu seseorang yang kesulitan secara sukarela.`,
+        toleransi: `**${aspectName}** adalah kemampuan untuk menerima dan menghargai perbedaan pendapat, keyakinan, dan budaya. Contohnya adalah berteman baik dengan orang yang berbeda latar belakang.`,
+        keadilan: `**${aspectName}** adalah prinsip untuk memperlakukan semua orang secara setara dan tidak memihak. Contohnya adalah membagi sesuatu secara adil saat bekerja dalam kelompok.`
+    };
+    return explanations[aspectKey] || `**${aspectName}** adalah salah satu dari 7 aspek penting dalam kecerdasan moral.`;
+}
+
+function capitalize(str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// === Global Functions ===
+window.closeResults = closeResults;
+window.discussResults = discussResults;
+window.exportToWord = exportToWord;
+window.restartQuiz = restartQuiz;
+window.showResultsTab = showResultsTab;
+window.showQuizHistory = showQuizHistory;
+window.quickAskAI = quickAskAI;
+window.explainCurrentAspect = explainCurrentAspect;
