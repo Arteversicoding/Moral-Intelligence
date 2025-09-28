@@ -101,6 +101,9 @@ export class AuthService {
 
     async login(email, password) {
         try {
+            console.log('Attempting login with:', email); // Debug log
+            console.log('Password length:', password.length); // Debug log    
+
             await setPersistence(this.auth, browserSessionPersistence);
             const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
             const user = userCredential.user;
@@ -129,6 +132,7 @@ export class AuthService {
             this.isAuthenticated = true;
             return { user: this.currentUser };
         } catch (error) {
+            console.error('Login error details:', error.code, error.message);
             console.error("Login error:", error);
             throw new Error(this.getFriendlyErrorMessage(error));
         }

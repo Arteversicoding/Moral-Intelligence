@@ -13,10 +13,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        .gradient-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-        
         .card-hover {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -58,11 +54,6 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
         }
         
-        .neon-glow {
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
-        }
-        
-        /* Enhanced button styles */
         .btn-premium {
             background: linear-gradient(45deg, #667eea, #764ba2);
             transition: all 0.3s ease;
@@ -90,7 +81,6 @@
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
         }
         
-        /* Animated icons */
         .icon-float {
             animation: float 3s ease-in-out infinite;
         }
@@ -100,7 +90,6 @@
             50% { transform: translateY(-10px); }
         }
         
-        /* Animated gradients */
         .animated-gradient {
             background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
@@ -113,7 +102,6 @@
             100% { background-position: 0% 50%; }
         }
         
-        /* Slide in animations */
         @keyframes slideIn {
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -123,7 +111,6 @@
             animation: slideIn 0.3s ease-out;
         }
         
-        /* Enhanced form styles */
         .form-input {
             transition: all 0.3s ease;
             border: 2px solid transparent;
@@ -137,7 +124,6 @@
             transform: scale(1.02);
         }
         
-        /* Progress bar enhancement */
         .progress-bar-animated {
             background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
             background-size: 200% 200%;
@@ -150,18 +136,25 @@
             100% { background-position: 0% 50%; }
         }
         
-        /* Section dividers */
         .section-divider {
             background: linear-gradient(90deg, transparent, #667eea, transparent);
             height: 1px;
             margin: 2rem 0;
         }
         
-        /* Responsive grid improvements */
         .metric-grid {
             display: grid;
             gap: 1.5rem;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .stat-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
     </style>
     <script type="module" src="auth-guard.js"></script>
@@ -180,7 +173,7 @@
                         </span>
                     </a>
                     <span class="glass-effect text-red-100 px-4 py-2 rounded-full text-sm font-bold border border-red-200/30">
-                        ✨ ADMIN PANEL
+                        Admin Panel
                     </span>
                 </div>
                 <div class="flex items-center space-x-6">
@@ -213,14 +206,14 @@
             </div>
         </div>
 
-        <!-- Enhanced Stats Overview -->
+        <!-- Enhanced Stats Overview - Realtime with User Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
             <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-8 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium mb-2">Total Users</p>
-                        <p class="text-4xl font-bold mb-1" id="totalUsers">0</p>
-                        <p class="text-blue-200 text-xs">👥 Registered Users</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalUsers" data-global-stat="totalUsers">0</p>
+                        <p class="text-blue-200 text-xs">Registered Users</p>
                     </div>
                     <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                         <i class="fas fa-users text-2xl"></i>
@@ -232,8 +225,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium mb-2">Total Materi</p>
-                        <p class="text-4xl font-bold mb-1" id="totalMaterials">0</p>
-                        <p class="text-green-200 text-xs">📚 Learning Resources</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalMaterials" data-global-stat="totalMaterials">0</p>
+                        <p class="text-green-200 text-xs">Learning Resources</p>
                     </div>
                     <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                         <i class="fas fa-book text-2xl"></i>
@@ -244,9 +237,9 @@
             <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-purple-100 text-sm font-medium mb-2">Chat Sessions</p>
-                        <p class="text-4xl font-bold mb-1" id="totalChats">0</p>
-                        <p class="text-purple-200 text-xs">💬 AI Conversations</p>
+                        <p class="text-purple-100 text-sm font-medium mb-2">Forum Posts</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalForumPosts" data-global-stat="totalForumPosts">0</p>
+                        <p class="text-purple-200 text-xs">Community Discussions</p>
                     </div>
                     <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                         <i class="fas fa-comments text-2xl"></i>
@@ -257,9 +250,9 @@
             <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-8 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-orange-100 text-sm font-medium mb-2">Survey Responses</p>
-                        <p class="text-4xl font-bold mb-1" id="surveyResponses">0</p>
-                        <p class="text-orange-200 text-xs">📊 Feedback Collected</p>
+                        <p class="text-orange-100 text-sm font-medium mb-2">Material Reads</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalMaterialReads" data-global-stat="totalMaterialReads">0</p>
+                        <p class="text-orange-200 text-xs">Content Engagement</p>
                     </div>
                     <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                         <i class="fas fa-chart-bar text-2xl"></i>
@@ -268,110 +261,79 @@
             </div>
         </div>
 
-        <!-- Enhanced Survey Analytics Section -->
+        <!-- Realtime Activity Feed -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
             <div class="flex items-center mb-8">
                 <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mr-4">
-                    <i class="fas fa-chart-line text-white text-xl"></i>
+                    <i class="fas fa-bolt text-white text-xl"></i>
                 </div>
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    📊 Survey Analytics
+                    Aktivitas Real-time
                 </h2>
             </div>
             
-            <!-- Enhanced Rating Statistics -->
-            <div class="mb-8">
-                <h3 class="text-xl font-semibold text-gray-700 mb-6 flex items-center">
-                    <span class="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3"></span>
-                    Rating Averages (1-10)
-                </h3>
-                <div class="metric-grid">
-                    <div class="card-hover bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-blue-700">📖 Text Readability</h4>
-                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-book-open text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-blue-800 mb-1" id="readabilityAvg">-</p>
-                        <p class="text-xs text-blue-600 font-medium">Average Score /10</p>
-                    </div>
-                    
-                    <div class="card-hover bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border border-green-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-green-700">🎨 Color & Layout</h4>
-                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-palette text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-green-800 mb-1" id="colorAvg">-</p>
-                        <p class="text-xs text-green-600 font-medium">Average Score /10</p>
-                    </div>
-                    
-                    <div class="card-hover bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-purple-700">✨ Design Appeal</h4>
-                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-magic text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-purple-800 mb-1" id="designAvg">-</p>
-                        <p class="text-xs text-purple-600 font-medium">Average Score /10</p>
-                    </div>
-                    
-                    <div class="card-hover bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-2xl border border-orange-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-orange-700">📱 Cross Platform</h4>
-                            <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-mobile-alt text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-orange-800 mb-1" id="platformAvg">-</p>
-                        <p class="text-xs text-orange-600 font-medium">Average Score /10</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Additional Enhanced Ratings -->
-            <div class="mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="card-hover bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-2xl border border-indigo-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-indigo-700">🎯 Ease of Use</h4>
-                            <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user-check text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-indigo-800 mb-1" id="usabilityAvg">-</p>
-                        <p class="text-xs text-indigo-600 font-medium">Average Score /10</p>
-                    </div>
-                    
-                    <div class="card-hover bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-2xl border border-pink-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-pink-700">🤖 Chatbot Relevance</h4>
-                            <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-robot text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-pink-800 mb-1" id="chatbotAvg">-</p>
-                        <p class="text-xs text-pink-600 font-medium">Average Score /10</p>
-                    </div>
-                    
-                    <div class="card-hover bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-2xl border border-teal-200/50">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-sm font-bold text-teal-700">🎬 Media Support</h4>
-                            <div class="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-photo-video text-white text-sm"></i>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-teal-800 mb-1" id="mediaAvg">-</p>
-                        <p class="text-xs text-teal-600 font-medium">Average Score /10</p>
-                    </div>
+            <div id="realtime-activity-feed" class="space-y-4 max-h-80 overflow-y-auto">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-wifi text-4xl mb-4"></i>
+                    <p>Menunggu aktivitas real-time...</p>
                 </div>
             </div>
         </div>
 
-        <div class="section-divider"></div>
+        <!-- Enhanced User Activity Stats -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Top Forum Contributors -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fas fa-trophy text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                        Top Forum Contributors
+                    </h3>
+                </div>
+                
+                <div id="top-contributors" class="space-y-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-users text-4xl mb-4"></i>
+                        <p>Loading contributors...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Engagement -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fas fa-chart-pie text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        Material Engagement
+                    </h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700">Completion Rate</span>
+                        <span class="font-bold text-purple-600" id="completion-rate">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="completion-progress" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div class="text-center p-4 bg-purple-50 rounded-xl">
+                            <p class="text-2xl font-bold text-purple-600 stat-pulse" id="materials-started">0</p>
+                            <p class="text-sm text-purple-700">Materials Started</p>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 rounded-xl">
+                            <p class="text-2xl font-bold text-green-600 stat-pulse" id="materials-completed">0</p>
+                            <p class="text-sm text-green-700">Materials Completed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Enhanced System Info & Usage Stats in Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -390,14 +352,21 @@
                     <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border-2 border-dashed border-blue-300 text-center">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
                             <i class="fas fa-brain text-green-600 mr-2"></i>
-                            AI Status
+                            Realtime System Status
                         </h4>
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Gemini API:</span>
+                                <span class="text-sm text-gray-600">Firestore:</span>
                                 <div class="flex items-center">
                                     <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                    <span class="text-sm font-bold text-green-700" id="aiStatus">Connected</span>
+                                    <span class="text-sm font-bold text-green-700" id="firestoreStatus">Connected</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">User Stats:</span>
+                                <div class="flex items-center">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                                    <span class="text-sm font-bold text-green-700" id="userStatsStatus">Active</span>
                                 </div>
                             </div>
                             <div class="flex justify-between">
@@ -452,17 +421,17 @@
                     <div class="grid grid-cols-3 gap-4">
                         <div class="card-hover bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200/50">
                             <div class="text-3xl mb-2">💻</div>
-                            <p class="text-2xl font-bold text-gray-800 mb-1" id="webUsers">0</p>
+                            <p class="text-2xl font-bold text-gray-800 stat-pulse" id="webUsers">0</p>
                             <p class="text-xs text-gray-600 font-medium">Web Users</p>
                         </div>
                         <div class="card-hover bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200/50">
                             <div class="text-3xl mb-2">📱</div>
-                            <p class="text-2xl font-bold text-gray-800 mb-1" id="androidUsers">0</p>
+                            <p class="text-2xl font-bold text-gray-800 stat-pulse" id="androidUsers">0</p>
                             <p class="text-xs text-gray-600 font-medium">Android Users</p>
                         </div>
                         <div class="card-hover bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200/50">
                             <div class="text-3xl mb-2">🍎</div>
-                            <p class="text-2xl font-bold text-gray-800 mb-1" id="iosUsers">0</p>
+                            <p class="text-2xl font-bold text-gray-800 stat-pulse" id="iosUsers">0</p>
                             <p class="text-xs text-gray-600 font-medium">iOS Users</p>
                         </div>
                     </div>
@@ -477,17 +446,17 @@
                     <div class="grid grid-cols-3 gap-4">
                         <div class="card-hover bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl text-center border border-blue-200/50">
                             <div class="text-3xl mb-2">🤖</div>
-                            <p class="text-2xl font-bold text-blue-700 mb-1" id="chatbotUsers">0</p>
+                            <p class="text-2xl font-bold text-blue-700 stat-pulse" id="chatbotUsers">0</p>
                             <p class="text-xs text-blue-600 font-medium">Chatbot AI</p>
                         </div>
                         <div class="card-hover bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl text-center border border-green-200/50">
                             <div class="text-3xl mb-2">📚</div>
-                            <p class="text-2xl font-bold text-green-700 mb-1" id="materiUsers">0</p>
+                            <p class="text-2xl font-bold text-green-700 stat-pulse" id="materiUsers">0</p>
                             <p class="text-xs text-green-600 font-medium">Learning Materials</p>
                         </div>
                         <div class="card-hover bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl text-center border border-purple-200/50">
                             <div class="text-3xl mb-2">💬</div>
-                            <p class="text-2xl font-bold text-purple-700 mb-1" id="forumUsers">0</p>
+                            <p class="text-2xl font-bold text-purple-700 stat-pulse" id="forumUsers">0</p>
                             <p class="text-xs text-purple-600 font-medium">Forum Community</p>
                         </div>
                     </div>
@@ -514,10 +483,10 @@
                     </div>
                 </button>
                 
-                <button onclick="exportSurveyData()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 rounded-2xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
+                <button onclick="exportUserStats()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 rounded-2xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
                     <div class="flex items-center justify-center">
                         <i class="fas fa-chart-line mr-3 text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="font-semibold">Export Survey</span>
+                        <span class="font-semibold">Export Stats</span>
                     </div>
                 </button>
                 
@@ -544,7 +513,7 @@
                     <i class="fas fa-folder-open text-white text-xl"></i>
                 </div>
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                    📚 Daftar Materi
+                    Daftar Materi
                 </h2>
             </div>
             
@@ -560,7 +529,7 @@
                     <i class="fas fa-cloud-upload-alt text-white text-xl"></i>
                 </div>
                 <h3 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    📤 Unggah Materi
+                    Unggah Materi
                 </h3>
             </div>
             
@@ -628,9 +597,14 @@
     <!-- Enhanced Notification Element -->
     <div id="notification" class="fixed top-6 right-6 px-8 py-4 rounded-2xl shadow-2xl z-50 opacity-0 transform translate-y-4 transition-all duration-500 backdrop-blur-sm border border-white/20"></div>
 
+    <!-- Import User Stats System (replaces realtime-stats and material-tracker) -->
+    <script type="module" src="user-stats.js"></script>
+
     <!-- Scripts -->
     <script type="module">
         import { supabase } from './supabase.js';
+        import { db } from './firebase-init.js';
+        import { collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
         // Initialize DOM elements
         const fileInput = document.getElementById('file-upload');
@@ -639,6 +613,98 @@
         const uploadProgress = document.getElementById('upload-progress');
         const progressBar = document.getElementById('progress-bar');
         const progressText = document.getElementById('progress-text');
+        
+        // Initialize realtime listeners with User Stats
+        function setupRealtimeListeners() {
+            // Listen to forum posts
+            const postsRef = collection(db, 'posts');
+            onSnapshot(postsRef, (snapshot) => {
+                const totalPosts = snapshot.size;
+                updateStat('totalForumPosts', totalPosts);
+                
+                // Add to activity feed
+                addToActivityFeed(`Forum posts: ${totalPosts}`, 'info');
+            });
+            
+            // Listen to user stats
+            const userStatsRef = collection(db, 'userStats');
+            onSnapshot(userStatsRef, (snapshot) => {
+                let totalUsers = 0;
+                let totalMaterialReads = 0;
+                let totalMaterialCompletions = 0;
+                let totalActiveDays = 0;
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    totalUsers++;
+                    totalMaterialReads += data.materialsRead || 0;
+                    totalMaterialCompletions += data.materialsCompleted || 0;
+                    totalActiveDays += data.activeDays || 0;
+                });
+                
+                updateStat('totalUsers', totalUsers);
+                updateStat('totalMaterialReads', totalMaterialReads);
+                updateStat('materials-started', totalMaterialReads);
+                updateStat('materials-completed', totalMaterialCompletions);
+                
+                // Update completion rate
+                const completionRate = totalMaterialReads > 0 ? Math.round((totalMaterialCompletions / totalMaterialReads) * 100) : 0;
+                updateCompletionRate(completionRate);
+                
+                // Add to activity feed
+                addToActivityFeed(`Active users: ${totalUsers} | Materials read: ${totalMaterialReads}`, 'success');
+            });
+        }
+        
+        function updateStat(statId, value) {
+            const elements = document.querySelectorAll(`#${statId}, [data-global-stat="${statId}"]`);
+            elements.forEach(el => {
+                el.textContent = value;
+                el.classList.add('stat-pulse');
+                setTimeout(() => {
+                    el.classList.remove('stat-pulse');
+                }, 2000);
+            });
+        }
+        
+        function updateCompletionRate(rate) {
+            const rateElement = document.getElementById('completion-rate');
+            const progressElement = document.getElementById('completion-progress');
+            
+            if (rateElement) rateElement.textContent = `${rate}%`;
+            if (progressElement) progressElement.style.width = `${rate}%`;
+        }
+        
+        function addToActivityFeed(message, type = 'info') {
+            const feed = document.getElementById('realtime-activity-feed');
+            const timestamp = new Date().toLocaleTimeString('id-ID');
+            
+            const typeColors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+            
+            const activityItem = document.createElement('div');
+            activityItem.className = `p-4 rounded-lg border ${typeColors[type]} flex justify-between items-center`;
+            activityItem.innerHTML = `
+                <span>${message}</span>
+                <span class="text-xs opacity-75">${timestamp}</span>
+            `;
+            
+            // Add to top of feed
+            if (feed.children.length === 0 || feed.children[0].textContent.includes('Menunggu')) {
+                feed.innerHTML = '';
+            }
+            
+            feed.insertBefore(activityItem, feed.firstChild);
+            
+            // Keep only last 10 items
+            while (feed.children.length > 10) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
         
         // File input change handler
         fileInput.addEventListener('change', (e) => {
@@ -652,7 +718,7 @@
             }
         });
 
-        // Fungsi helper untuk format ukuran file
+        // Helper functions
         function formatFileSize(bytes) {
             if (!bytes) return '0 Bytes';
             const k = 1024;
@@ -678,6 +744,9 @@
                     .list('materi');
 
                 if (error) throw error;
+
+                // Update total materials count
+                updateStat('totalMaterials', files.length);
 
                 if (!files || files.length === 0) {
                     materiList.innerHTML = `
@@ -763,11 +832,12 @@
 
                 if (error) throw error;
 
-                showNotification('✅ Materi berhasil dihapus', 'success');
+                showNotification('Materi berhasil dihapus', 'success');
                 loadMateriList();
+                addToActivityFeed(`Material deleted: ${namaFile}`, 'warning');
             } catch (error) {
                 console.error('Gagal menghapus materi:', error);
-                showNotification(`❌ Gagal menghapus materi: ${error.message}`, 'error');
+                showNotification(`Gagal menghapus materi: ${error.message}`, 'error');
             }
         }
 
@@ -775,26 +845,18 @@
         uploadBtn.addEventListener('click', async () => {
             const file = fileInput.files[0];
             
-            // Validate file
             if (!file) {
-                showNotification('⚠️ Silakan pilih file terlebih dahulu', 'error');
+                showNotification('Silakan pilih file terlebih dahulu', 'error');
                 return;
             }
-            
-            console.log('Nama file asli:', file.name);
-            console.log('Nama file yang akan diupload:', file.name);
 
             try {
-                // Set upload state
                 uploadBtn.disabled = true;
                 uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Sedang Mengunggah...';
                 uploadProgress.classList.remove('hidden');
                 
-                // Generate unique filename
                 const fileName = file.name; 
-                const filePath = `materi/${fileName}`;
                 
-                // Upload file to Supabase Storage
                 const { data, error } = await supabase.storage
                     .from('Mobile-Intelligence')
                     .upload(`materi/${fileName}`, file, {
@@ -809,26 +871,18 @@
                 
                 if (error) throw error;
                 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                .from('Mobile-Intelligence')
-                .getPublicUrl(`materi/${file.name}`);
-                
-                // Reset form
                 fileInput.value = '';
                 fileNameSpan.textContent = 'Belum ada file yang dipilih';
                 fileNameSpan.className = "text-gray-600 font-medium";
                 
-                // Show success with file URL
-                showNotification('🎉 File berhasil diunggah!', 'success');
-                loadMateriList(); // Reload the material list
-                console.log('File URL:', publicUrl);
+                showNotification('File berhasil diunggah!', 'success');
+                loadMateriList();
+                addToActivityFeed(`New material uploaded: ${fileName}`, 'success');
                 
             } catch (error) {
                 console.error('Upload error:', error);
-                showNotification('❌ Gagal mengunggah file: ' + error.message, 'error');
+                showNotification('Gagal mengunggah file: ' + error.message, 'error');
             } finally {
-                // Reset upload state
                 uploadBtn.disabled = false;
                 uploadBtn.innerHTML = '<i class="fas fa-rocket mr-3"></i> Unggah Materi Sekarang';
                 uploadProgress.classList.add('hidden');
@@ -850,25 +904,82 @@
                 notification.className = `${baseClasses} bg-gradient-to-r from-red-500 to-rose-500 text-white`;
             }
             
-            // Show notification with enhanced animation
             notification.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
             notification.classList.add('opacity-100', 'translate-y-0', 'scale-100');
             
-            // Hide after 4 seconds with enhanced animation
             setTimeout(() => {
                 notification.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
                 notification.classList.add('opacity-0', 'translate-y-4', 'scale-95');
             }, 4000);
         }
 
-        // Make functions global for onclick handlers
+        // Enhanced admin functions
+        window.exportData = async function() {
+            try {
+                const { data: posts } = await getDocs(collection(db, 'posts'));
+                const { data: userStats } = await getDocs(collection(db, 'userStats'));
+                
+                const exportData = {
+                    posts: posts.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                    userStats: userStats.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                    exportDate: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `moral-intelligence-data-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification('Data berhasil diekspor', 'success');
+                addToActivityFeed('Admin exported system data', 'info');
+            } catch (error) {
+                showNotification('Gagal mengekspor data', 'error');
+            }
+        };
+
+        window.exportUserStats = function() {
+            showNotification('Fitur ekspor statistik user sedang dikembangkan', 'info');
+        };
+
+        window.clearAllData = function() {
+            if (confirm('PERINGATAN: Ini akan menghapus SEMUA data! Apakah Anda yakin?')) {
+                if (confirm('Ketik "HAPUS SEMUA" untuk konfirmasi:') === 'HAPUS SEMUA') {
+                    showNotification('Penghapusan data dimulai...', 'warning');
+                    addToActivityFeed('Admin initiated data cleanup', 'warning');
+                }
+            }
+        };
+
+        window.refreshStats = function() {
+            setupRealtimeListeners();
+            loadMateriList();
+            showNotification('Statistik berhasil diperbarui', 'success');
+            addToActivityFeed('Admin refreshed statistics', 'info');
+        };
+
         window.hapusMateri = hapusMateri;
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const lastUpdateElement = document.getElementById('lastUpdate');
+            if (lastUpdateElement) {
+                lastUpdateElement.textContent = new Date().toLocaleTimeString('id-ID');
+            }
+        }
 
         // Enhanced page load
         document.addEventListener('DOMContentLoaded', () => {
+            setupRealtimeListeners();
             loadMateriList();
+            updateLastUpdateTime();
             
-            // Add some loading animations
+            setInterval(updateLastUpdateTime, 60000);
+            
+            addToActivityFeed('Admin dashboard initialized', 'success');
+            
             const cards = document.querySelectorAll('.stat-card');
             cards.forEach((card, index) => {
                 setTimeout(() => {

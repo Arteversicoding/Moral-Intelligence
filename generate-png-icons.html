@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNG Icon Generator - Moral Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">🎨 PNG Icon Generator</h1>
+            <p class="text-gray-600 mb-8">Convert SVG icons to PNG format for PWA compatibility</p>
+            
+            <!-- Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Progress</span>
+                    <span id="progress-text">0/0</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="progress-bar" class="progress-bar bg-indigo-600 h-3 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex gap-4 mb-8">
+                <button id="generate-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                    🚀 Generate PNG Icons
+                </button>
+                <button id="download-all-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium" disabled>
+                    📦 Download All
+                </button>
+                <button id="clear-btn" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                    🗑️ Clear
+                </button>
+            </div>
+
+            <!-- Status -->
+            <div id="status" class="mb-6 p-4 bg-blue-50 rounded-lg hidden">
+                <div class="flex items-center">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+                    <span class="text-blue-800">Generating icons...</span>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+            <!-- Log -->
+            <div class="mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Generation Log</h3>
+                <div id="log" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-40 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PNGIconGenerator {
+            constructor() {
+                this.iconSizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+                this.generatedIcons = new Map();
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.log('PNG Icon Generator initialized');
+            }
+
+            setupEventListeners() {
+                document.getElementById('generate-btn').addEventListener('click', () => this.generateAllIcons());
+                document.getElementById('download-all-btn').addEventListener('click', () => this.downloadAll());
+                document.getElementById('clear-btn').addEventListener('click', () => this.clear());
+            }
+
+            log(message) {
+                const logElement = document.getElementById('log');
+                const timestamp = new Date().toLocaleTimeString();
+                logElement.innerHTML += `[${timestamp}] ${message}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+                console.log(`[PNG Generator] ${message}`);
+            }
+
+            updateProgress(current, total) {
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                const percentage = (current / total) * 100;
+                
+                progressBar.style.width = `${percentage}%`;
+                progressText.textContent = `${current}/${total}`;
+            }
+
+            showStatus(show = true) {
+                const statusElement = document.getElementById('status');
+                if (show) {
+                    statusElement.classList.remove('hidden');
+                } else {
+                    statusElement.classList.add('hidden');
+                }
+            }
+
+            async generateAllIcons() {
+                this.log('Starting PNG icon generation...');
+                this.showStatus(true);
+                this.generatedIcons.clear();
+                
+                const resultsContainer = document.getElementById('results');
+                resultsContainer.innerHTML = '';
+                
+                let completed = 0;
+                const total = this.iconSizes.length;
+                
+                for (const size of this.iconSizes) {
+                    try {
+                        this.log(`Generating ${size}x${size} icon...`);
+                        const pngBlob = await this.generatePNGIcon(size);
+                        
+                        if (pngBlob) {
+                            this.generatedIcons.set(size, pngBlob);
+                            this.displayIcon(size, pngBlob);
+                            this.log(`✅ Generated icon-${size}x${size}.png`);
+                        } else {
+                            this.log(`❌ Failed to generate icon-${size}x${size}.png`);
+                        }
+                    } catch (error) {
+                        this.log(`❌ Error generating ${size}x${size}: ${error.message}`);
+                    }
+                    
+                    completed++;
+                    this.updateProgress(completed, total);
+                }
+                
+                this.showStatus(false);
+                this.log(`🎉 Generation completed! ${this.generatedIcons.size}/${total} icons generated`);
+                
+                // Enable download all button
+                document.getElementById('download-all-btn').disabled = this.generatedIcons.size === 0;
+            }
+
+            async generatePNGIcon(size) {
+                return new Promise((resolve, reject) => {
+                    // Create SVG content
+                    const svgContent = this.createSVGIcon(size);
+                    
+                    // Create canvas
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Create image from SVG
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            // Clear canvas with transparent background
+                            ctx.clearRect(0, 0, size, size);
+                            
+                            // Draw image
+                            ctx.drawImage(img, 0, 0, size, size);
+                            
+                            // Convert to PNG blob
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    resolve(blob);
+                                } else {
+                                    reject(new Error('Failed to create PNG blob'));
+                                }
+                            }, 'image/png');
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    
+                    img.onerror = () => reject(new Error('Failed to load SVG'));
+                    
+                    // Convert SVG to data URL
+                    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(svgBlob);
+                    img.src = url;
+                });
+            }
+
+            createSVGIcon(size) {
+                return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Background circle -->
+                    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 4}" fill="url(#grad1)" />
+                    
+                    <!-- Brain icon -->
+                    <g transform="translate(${size*0.2}, ${size*0.2}) scale(${size*0.6/100})">
+                        <!-- Left brain hemisphere -->
+                        <path d="M20 30 C15 25, 15 15, 25 10 C35 5, 45 10, 50 20 C50 25, 45 30, 40 35 C35 40, 25 40, 20 30 Z" 
+                              fill="white" opacity="0.9" stroke="white" stroke-width="2"/>
+                        
+                        <!-- Right brain hemisphere -->
+                        <path d="M50 20 C55 15, 65 15, 75 20 C85 25, 85 35, 80 40 C75 45, 65 45, 60 40 C55 35, 50 30, 50 20 Z" 
+                              fill="white" opacity="0.9" stroke="white" stroke-width="2"/>
+                        
+                        <!-- Brain details -->
+                        <circle cx="35" cy="25" r="3" fill="rgba(102,126,234,0.8)"/>
+                        <circle cx="65" cy="30" r="3" fill="rgba(102,126,234,0.8)"/>
+                        <path d="M30 35 Q40 30 50 35" stroke="rgba(102,126,234,0.8)" stroke-width="2" fill="none"/>
+                        <path d="M55 25 Q65 20 75 25" stroke="rgba(102,126,234,0.8)" stroke-width="2" fill="none"/>
+                    </g>
+                    
+                    <!-- Text "MI" at bottom -->
+                    <text x="${size/2}" y="${size*0.85}" text-anchor="middle" 
+                          font-family="Arial, sans-serif" font-size="${size*0.15}" font-weight="bold" fill="white">MI</text>
+                </svg>`;
+            }
+
+            displayIcon(size, blob) {
+                const resultsContainer = document.getElementById('results');
+                const url = URL.createObjectURL(blob);
+                
+                const iconCard = document.createElement('div');
+                iconCard.className = 'bg-gray-50 rounded-lg p-4 text-center';
+                iconCard.innerHTML = `
+                    <img src="${url}" alt="Icon ${size}x${size}" class="w-16 h-16 mx-auto mb-3 rounded-lg shadow">
+                    <h4 class="font-semibold text-gray-800">icon-${size}x${size}.png</h4>
+                    <p class="text-sm text-gray-600 mb-3">${size}×${size} pixels</p>
+                    <button onclick="window.iconGenerator.downloadIcon(${size})" 
+                            class="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 transition-colors">
+                        Download
+                    </button>
+                `;
+                
+                resultsContainer.appendChild(iconCard);
+            }
+
+            downloadIcon(size) {
+                const blob = this.generatedIcons.get(size);
+                if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon-${size}x${size}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.log(`📥 Downloaded icon-${size}x${size}.png`);
+                }
+            }
+
+            async downloadAll() {
+                this.log('Preparing ZIP download...');
+                
+                // Create ZIP file (simple implementation)
+                const zip = new JSZip();
+                
+                for (const [size, blob] of this.generatedIcons) {
+                    zip.file(`icon-${size}x${size}.png`, blob);
+                }
+                
+                try {
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    const url = URL.createObjectURL(zipBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'pwa-icons.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.log('📦 Downloaded all icons as ZIP');
+                } catch (error) {
+                    this.log(`❌ ZIP creation failed: ${error.message}`);
+                    // Fallback: download individually
+                    this.log('📥 Downloading icons individually...');
+                    for (const size of this.iconSizes) {
+                        if (this.generatedIcons.has(size)) {
+                            await new Promise(resolve => setTimeout(resolve, 500)); // Delay between downloads
+                            this.downloadIcon(size);
+                        }
+                    }
+                }
+            }
+
+            clear() {
+                this.generatedIcons.clear();
+                document.getElementById('results').innerHTML = '';
+                document.getElementById('log').innerHTML = '';
+                document.getElementById('download-all-btn').disabled = true;
+                this.updateProgress(0, 0);
+                this.log('Cleared all generated icons');
+            }
+        }
+
+        // Simple JSZip implementation (fallback if not available)
+        class JSZip {
+            constructor() {
+                this.files = new Map();
+            }
+            
+            file(name, data) {
+                this.files.set(name, data);
+            }
+            
+            async generateAsync(options) {
+                // This is a simplified implementation
+                // In production, you'd use the real JSZip library
+                throw new Error('ZIP generation requires JSZip library. Downloading individually...');
+            }
+        }
+
+        // Initialize generator
+        window.iconGenerator = new PNGIconGenerator();
+    </script>
+</body>
+</html>

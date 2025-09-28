@@ -56,6 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 likes: 0,
                 comments: []
             });
+  
+            if (typeof window.incrementForumPosts === 'function') {
+                window.incrementForumPosts();
+            }
+            
             newPostForm.reset();
             newPostModal.classList.add('hidden');
             fetchPosts();

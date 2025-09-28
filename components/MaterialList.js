@@ -34,7 +34,7 @@ const MaterialItem = ({ item, onEdit, onDelete }) => {
       </View>
     </View>
   );
-};\n
+};
 export default function MaterialList({ onEditMaterial }) {
   const [materials, setMaterials] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

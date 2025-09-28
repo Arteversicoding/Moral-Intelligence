@@ -14,10 +14,29 @@
         .material-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
         .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .reading-progress { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            height: 4px; 
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6); 
+            z-index: 1000; 
+            transition: width 0.3s ease;
+        }
+        .stat-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
     <script type="module" src="auth-guard.js"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-100">
+
+    <!-- Reading Progress Bar -->
+    <div id="reading-progress" class="reading-progress" style="width: 0%"></div>
 
     <!-- Main App Container -->
     <div id="app-container" class="pb-24">
@@ -31,6 +50,22 @@
                 <button id="refresh-btn" class="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
                     <i class="fas fa-sync-alt text-white"></i>
                 </button>
+            </div>
+            
+            <!-- Reading Stats -->
+            <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-lg font-bold stat-pulse" data-stat="materials-read">0</p>
+                    <p class="text-purple-200 text-xs">Materi Dibaca</p>
+                </div>
+                <div>
+                    <p class="text-lg font-bold stat-pulse" data-stat="materials-completed">0</p>
+                    <p class="text-purple-200 text-xs">Selesai Dibaca</p>
+                </div>
+                <div>
+                    <p class="text-lg font-bold" id="completion-rate">0%</p>
+                    <p class="text-purple-200 text-xs">Tingkat Selesai</p>
+                </div>
             </div>
         </div>
         
@@ -99,7 +134,47 @@
             </div>
         </div>
     </div>
-    </div>
+
+    <!-- Material Reader Modal -->
+    <div id="material-reader-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h2 id="material-title" class="text-xl font-bold text-gray-800">Material Title</h2>
+                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                        <span id="reading-time">0 min</span>
+                        <span>•</span>
+                        <span id="reading-progress-text">0% selesai</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="mark-complete-btn" class="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600">
+                        Tandai Selesai
+                    </button>
+                    <button onclick="closeMaterialReader()" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="px-4 py-2 bg-gray-50">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="material-progress-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto p-6" id="material-content">
+                <div class="text-center py-20">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Memuat konten...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -132,6 +207,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="materi-search.js" defer></script>
     <script type="module" src="materials-display.js"></script>
+    
+    <!-- Import User Stats System (replaces realtime-stats and material-tracker) -->
+    <script type="module" src="user-stats.js"></script>
 
     <script>
         function setActiveNav() {
@@ -141,63 +219,301 @@
                 }
             });
         }
-        document.addEventListener('DOMContentLoaded', setActiveNav);
+        
+        // Update completion rate
+        function updateCompletionRate() {
+            const materialsRead = parseInt(document.querySelector('[data-stat="materials-read"]')?.textContent || '0');
+            const materialsCompleted = parseInt(document.querySelector('[data-stat="materials-completed"]')?.textContent || '0');
+            
+            const completionRate = materialsRead > 0 ? Math.round((materialsCompleted / materialsRead) * 100) : 0;
+            const completionRateElement = document.getElementById('completion-rate');
+            if (completionRateElement) {
+                completionRateElement.textContent = `${completionRate}%`;
+            }
+        }
+
+        // Material Reader Functions
+        function openMaterialReader(materialId, materialName, materialUrl) {
+            const modal = document.getElementById('material-reader-modal');
+            const titleElement = document.getElementById('material-title');
+            const contentElement = document.getElementById('material-content');
+            
+            // Set title
+            titleElement.textContent = materialName;
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            
+            // Start tracking using userStats
+            if (window.userStats) {
+                window.userStats.startMaterialTracking(materialId, materialName, 'document');
+            }
+            
+            // Load content
+            loadMaterialContent(materialUrl, materialName);
+            
+            // Setup reading timer
+            startReadingTimer();
+        }
+        
+        function closeMaterialReader() {
+            const modal = document.getElementById('material-reader-modal');
+            modal.classList.add('hidden');
+            
+            // Stop tracking using userStats
+            if (window.userStats) {
+                window.userStats.stopMaterialTracking();
+            }
+            
+            // Stop reading timer
+            stopReadingTimer();
+        }
+        
+        let readingTimer = null;
+        let readingStartTime = null;
+        
+        function startReadingTimer() {
+            readingStartTime = Date.now();
+            readingTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - readingStartTime) / 60000); // minutes
+                const readingTimeElement = document.getElementById('reading-time');
+                if (readingTimeElement) {
+                    readingTimeElement.textContent = `${elapsed} min`;
+                }
+            }, 1000);
+        }
+        
+        function stopReadingTimer() {
+            if (readingTimer) {
+                clearInterval(readingTimer);
+                readingTimer = null;
+                readingStartTime = null;
+            }
+        }
+        
+        async function loadMaterialContent(url, materialName) {
+            const contentElement = document.getElementById('material-content');
+            
+            try {
+                // For now, show an embedded viewer or download link
+                contentElement.innerHTML = `
+                    <div class="text-center py-10">
+                        <div class="w-24 h-24 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">${materialName}</h3>
+                        <p class="text-gray-600 mb-6">Klik tombol di bawah untuk membuka dan membaca materi.</p>
+                        <div class="space-y-3">
+                            <a href="${url}" target="_blank" 
+                               class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                📖 Buka Materi
+                            </a>
+                            <br>
+                            <a href="${url}?download" download="${materialName}"
+                               class="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                📥 Unduh Materi
+                            </a>
+                        </div>
+                        <div class="mt-8 p-4 bg-yellow-50 rounded-lg">
+                            <p class="text-sm text-yellow-800">
+                                <strong>💡 Tips:</strong> Baca materi hingga selesai untuk mendapatkan tracking progress yang akurat!
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                // Simulate reading progress for demo
+                simulateReadingProgress();
+                
+            } catch (error) {
+                console.error('Error loading material content:', error);
+                contentElement.innerHTML = `
+                    <div class="text-center py-10">
+                        <div class="text-red-500 mb-4">❌ Gagal memuat konten</div>
+                        <p class="text-gray-600">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function simulateReadingProgress() {
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(progressInterval);
+                    
+                    // Mark as completed using userStats
+                    if (window.userStats) {
+                        window.userStats.forceCompleteMaterial();
+                    }
+                }
+                
+                // Update progress bar
+                const progressBar = document.getElementById('material-progress-bar');
+                const progressText = document.getElementById('reading-progress-text');
+                if (progressBar) {
+                    progressBar.style.width = `${progress}%`;
+                }
+                if (progressText) {
+                    progressText.textContent = `${Math.round(progress)}% selesai`;
+                }
+            }, 2000);
+        }
+        
+        // Make functions global
+        window.openMaterialReader = openMaterialReader;
+        window.closeMaterialReader = closeMaterialReader;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav();
+            
+            // Setup mark complete button
+            const markCompleteBtn = document.getElementById('mark-complete-btn');
+            if (markCompleteBtn) {
+                markCompleteBtn.addEventListener('click', () => {
+                    if (window.userStats) {
+                        window.userStats.forceCompleteMaterial();
+                    }
+                });
+            }
+            
+            // Update completion rate when stats change
+            setInterval(updateCompletionRate, 1000);
+        });
     </script>
 
     <script type="module">
         import { supabase } from './supabase.js';
       
         async function loadMateri() {
-          console.log("📥 Mulai ambil daftar file dari bucket Mobile-Intelligence...");
+            console.log("🔥 Mulai ambil daftar file dari bucket Mobile-Intelligence...");
       
-          const { data, error } = await supabase
-            .storage
-            .from('Mobile-Intelligence') // ← bucket kamu
-            .list('materi', { limit: 100 });
-      
-          if (error) {
-            console.error("❌ Gagal ambil file:", error.message);
-            return;
-          }
-      
-          console.log("✅ Daftar file dari bucket:", data);
-      
-          const materiList = document.getElementById('materials-list');
-          materiList.innerHTML = '';
-      
-          for (const file of data) {
-            console.log("📄 File ditemukan:", file.name);
-      
-            const { data: { publicUrl } } = supabase
+            const { data, error } = await supabase
                 .storage
                 .from('Mobile-Intelligence')
-                .getPublicUrl(`materi/${file.name}`);
+                .list('materi', { limit: 100 });
+      
+            if (error) {
+                console.error("❌ Gagal ambil file:", error.message);
+                return;
+            }
+      
+            console.log("✅ Daftar file dari bucket:", data);
+            
+            // Filter out empty folder placeholders and invalid files
+            const validFiles = data.filter(file => {
+                // Skip empty folder placeholders (usually named .emptyFolderPlaceholder)
+                if (file.name === '.emptyFolderPlaceholder' || file.name.startsWith('.')) {
+                    return false;
+                }
+                
+                // Skip files with size 0 (empty placeholders)
+                if (file.metadata && file.metadata.size === 0) {
+                    return false;
+                }
+                
+                // Only include actual files (not directories)
+                return file.name && file.name.includes('.');
+            });
+      
+            const materiList = document.getElementById('materials-list');
+            materiList.innerHTML = '';
+            
+            // Update materials count with valid files only
+            const materialsCount = document.getElementById('materials-count');
+            if (materialsCount) {
+                materialsCount.textContent = `${validFiles.length} materi`;
+            }
+            
+            // Show empty state if no valid files
+            if (validFiles.length === 0) {
+                materiList.innerHTML = `
+                    <div class="col-span-full text-center py-20">
+                        <div class="w-24 h-24 mx-auto mb-6 text-gray-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Tidak ada materi tersedia</h3>
+                        <p class="text-sm text-gray-500">Materi sedang disiapkan dan akan segera tersedia.</p>
+                    </div>
+                `;
+                return;
+            }
+      
+            for (const file of validFiles) {
+                console.log("📄 File ditemukan:", file.name);
+      
+                const { data: { publicUrl } } = supabase
+                    .storage
+                    .from('Mobile-Intelligence')
+                    .getPublicUrl(`materi/${file.name}`);
 
-            console.log("🌍 Public URL:", publicUrl);
+                console.log("🌐 Public URL:", publicUrl);
 
-            const div = document.createElement('div');
-            const downloadUrl = `${publicUrl}?download=${encodeURIComponent(file.name)}&response-content-disposition=attachment`;
-            div.className = "bg-white rounded-2xl p-5 shadow-lg";
-            div.innerHTML = `
-            <div class="flex items-start space-x-4">
-                <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-                📘
-                </div>
-                <div>
-                <h4 class="font-semibold text-gray-800 mb-1">${file.name}</h4>
-                <a href="${downloadUrl}" 
-                    download="${file.name}"
-                    class="inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                    Unduh Materi
-                </a>
-                </div>
-            </div>
-            `;
-            materiList.appendChild(div);
-          }
+                // Get file extension for appropriate icon
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                let fileIcon = '📘'; // default
+                
+                switch(fileExt) {
+                    case 'pdf':
+                        fileIcon = '📕';
+                        break;
+                    case 'doc':
+                    case 'docx':
+                        fileIcon = '📄';
+                        break;
+                    case 'ppt':
+                    case 'pptx':
+                        fileIcon = '📊';
+                        break;
+                    case 'mp4':
+                    case 'avi':
+                    case 'mov':
+                        fileIcon = '🎥';
+                        break;
+                    default:
+                        fileIcon = '📘';
+                }
+
+                const div = document.createElement('div');
+                const downloadUrl = `${publicUrl}?download=${encodeURIComponent(file.name)}&response-content-disposition=attachment`;
+                div.className = "material-card bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300";
+                div.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                            ${fileIcon}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-2">${file.name}</h4>
+                            <p class="text-sm text-gray-500 mb-3">Materi pembelajaran moral intelligence</p>
+                            <div class="flex space-x-2">
+                                <button onclick="openMaterialReader('${file.name}', '${file.name}', '${publicUrl}')"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                    📖 Baca Materi
+                                </button>
+                                <a href="${downloadUrl}" 
+                                   download="${file.name}"
+                                   class="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                                    📥 Unduh
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                materiList.appendChild(div);
+            }
         }
       
         document.addEventListener("DOMContentLoaded", loadMateri);
-      </script>      
+    </script>      
 </body>
 </html>

@@ -77,8 +77,9 @@ export class MaterialsDisplay {
 
             if (error) throw error;
 
+            // Filter out any invalid files and map to material objects
             this.materials = data
-                .filter(file => file.name !== '.emptyFolderPlaceholder')
+                .filter(file => file.name && file.name !== '.emptyFolderPlaceholder')
                 .map(file => ({
                     id: file.id,
                     name: file.name,
@@ -87,6 +88,8 @@ export class MaterialsDisplay {
                     lastModified: file.metadata?.lastModified || new Date().toISOString(),
                     url: this.getFileUrl(file.name)
                 }));
+                
+            console.log('Loaded materials:', this.materials);
 
             this.filterAndRenderMaterials();
             this.updateMaterialsCount();
@@ -117,12 +120,15 @@ export class MaterialsDisplay {
     }
 
     static getFileUrl(filename) {
-        const { data } = supabase
-            .storage
-            .from('Mobile-Intelligence')
-            .getPublicUrl(`materi/${filename}`);
+        // Gunakan format URL langsung yang konsisten
+        const baseUrl = 'https://leqtvucfgxwukfgsvnei.supabase.co/storage/v1/object/public';
+        const bucketName = 'Mobile-Intelligence';
+        const folder = 'materi';
         
-        return data?.publicUrl || '';
+        // Encode nama file untuk URL yang aman
+        const encodedFilename = encodeURIComponent(filename);
+        
+        return `${baseUrl}/${bucketName}/${folder}/${encodedFilename}`;
     }
 
     static filterAndRenderMaterials() {
@@ -146,7 +152,7 @@ export class MaterialsDisplay {
     }
 
     static renderMaterials(materials) {
-        if (!materials.length) {
+        if (!materials || !materials.length) {
             this.elements.emptyState?.classList.remove('hidden');
             this.elements.materialsContainer?.classList.add('hidden');
             return;
@@ -155,31 +161,40 @@ export class MaterialsDisplay {
         this.elements.emptyState?.classList.add('hidden');
         this.elements.materialsContainer?.classList.remove('hidden');
 
-        const html = materials.map(material => `
-            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <div class="p-6">
-                    <div class="flex items-center space-x-4 mb-4">
-                        <div class="p-3 rounded-lg bg-indigo-50 text-indigo-600">
-                            ${this.getFileIcon(material.type)}
+        const html = materials
+            .filter(material => material.name !== '.emptyFolderPlaceholder')
+            .map(material => {
+                const fileUrl = this.getFileUrl(material.name);
+                
+                return `
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+                                ${this.getFileIcon(material.type)}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-base font-medium text-gray-900 truncate">${material.name}</h3>
+                                <p class="text-sm text-gray-500">${this.formatFileSize(material.size)} • ${this.formatDate(material.lastModified)}</p>
+                            </div>
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-base font-medium text-gray-900 truncate">${material.name}</h3>
-                            <p class="text-sm text-gray-500">${this.formatFileSize(material.size)} • ${this.formatDate(material.lastModified)}</p>
+                        <div class="flex justify-end space-x-2">
+                            <a href="${fileUrl}" 
+                               download="${material.name}" 
+                               class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Unduh
+                            </a>
+                            <a href="${fileUrl}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="px-4 py-2 bg-white border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Buka
+                            </a>
                         </div>
                     </div>
-                    <div class="flex justify-end space-x-2">
-                        <a href="${material.url}" download="${material.name}" 
-                           class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Unduh
-                        </a>
-                        <a href="${material.url}" target="_blank" rel="noopener noreferrer"
-                           class="px-4 py-2 bg-white border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Buka
-                        </a>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+                </div>`;
+            })
+            .join('');
 
         this.elements.materialsList.innerHTML = html;
         this.updateMaterialsCount(materials.length);

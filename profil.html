@@ -9,6 +9,13 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .nav-button.active { color: #4f46e5; /* Indigo-600 */ }
+        .stat-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
     <script type="module" src="auth-guard.js"></script>
 </head>
@@ -31,11 +38,111 @@
         </div>
 
         <div class="p-6 space-y-6">
-            <!-- Account Stats -->
+            <!-- Account Stats - Rating dihapus, ditambah tracking realtime -->
             <div class="grid grid-cols-3 gap-4 text-center">
-                <div><p class="text-xl font-bold text-gray-800">28</p><p class="text-sm text-gray-500">Post Forum</p></div>
-                <div><p class="text-xl font-bold text-gray-800">15</p><p class="text-sm text-gray-500">Materi Selesai</p></div>
-                <div><p class="text-xl font-bold text-gray-800">4.8 ⭐</p><p class="text-sm text-gray-500">Rating</p></div>
+                <div class="bg-white rounded-xl p-4 shadow-lg">
+                    <p class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="active-days">0</p>
+                    <p class="text-sm text-gray-500">Hari Aktif</p>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-lg">
+                    <p class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="forum-posts">0</p>
+                    <p class="text-sm text-gray-500">Post Forum</p>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-lg">
+                    <p class="text-2xl font-bold text-green-600 stat-pulse" data-stat="materials-completed">0</p>
+                    <p class="text-sm text-gray-500">Materi Selesai</p>
+                </div>
+            </div>
+
+            <!-- Detailed Activity Stats -->
+            <div class="bg-white rounded-2xl p-6 shadow-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-indigo-600"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Statistik Aktivitas
+                </h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Post di Forum</p>
+                                <p class="text-sm text-gray-500">Kontribusi diskusi</p>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="forum-posts">0</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Materi Dibaca</p>
+                                <p class="text-sm text-gray-500">Total yang dibuka</p>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-bold text-green-600 stat-pulse" data-stat="materials-read">0</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Materi Selesai</p>
+                                <p class="text-sm text-gray-500">Dibaca hingga akhir</p>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-bold text-purple-600 stat-pulse" data-stat="materials-completed">0</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4l-3 3h18l-3-3V2z"/><path d="M16 4v4l3 3H5l3-3V4"/></svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Hari Aktif</p>
+                                <p class="text-sm text-gray-500">Konsistensi belajar</p>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-bold text-orange-600 stat-pulse" data-stat="active-days">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Overview -->
+            <div class="bg-white rounded-2xl p-6 shadow-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    Progress Belajar
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Completion Rate</span>
+                            <span id="completion-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div id="completion-progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <p class="text-lg font-bold text-green-600" data-stat="materials-read">0</p>
+                            <p class="text-xs text-green-700">Started</p>
+                        </div>
+                        <div class="text-center p-3 bg-blue-50 rounded-lg">
+                            <p class="text-lg font-bold text-blue-600" data-stat="materials-completed">0</p>
+                            <p class="text-xs text-blue-700">Completed</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Menu List -->
@@ -44,11 +151,7 @@
                     <span class="font-medium text-gray-700">Informasi Akun</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="9 18 15 12 9 6"/></svg>
                 </a>
-                <a href="#" class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
-                    <span class="font-medium text-gray-700">Notifikasi</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="9 18 15 12 9 6"/></svg>
-                </a>
-                <a href="#" class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
+                <a href="privacy-security.html" class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
                     <span class="font-medium text-gray-700">Privasi & Keamanan</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="9 18 15 12 9 6"/></svg>
                 </a>
@@ -99,9 +202,31 @@
                 }
             });
         }
+        
+        // Update completion rate
+        function updateCompletionRate() {
+            const materialsRead = parseInt(document.querySelector('[data-stat="materials-read"]')?.textContent || '0');
+            const materialsCompleted = parseInt(document.querySelector('[data-stat="materials-completed"]')?.textContent || '0');
+            
+            const completionRate = materialsRead > 0 ? Math.round((materialsCompleted / materialsRead) * 100) : 0;
+            
+            const completionPercentage = document.getElementById('completion-percentage');
+            const completionProgressBar = document.getElementById('completion-progress-bar');
+            
+            if (completionPercentage) {
+                completionPercentage.textContent = `${completionRate}%`;
+            }
+            if (completionProgressBar) {
+                completionProgressBar.style.width = `${completionRate}%`;
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', () => {
             setActiveNav();
             initializeAuth();
+            
+            // Update completion rate when stats change
+            setInterval(updateCompletionRate, 1000);
         });
 
         async function initializeAuth() {
@@ -187,6 +312,10 @@
             }
         }
     </script>
+    
+    <!-- Import User Stats System (replaces realtime-stats) -->
+    <script type="module" src="user-stats.js"></script>
+    
     <script type="module">
         import { AuthService } from './auth-service.js';
 

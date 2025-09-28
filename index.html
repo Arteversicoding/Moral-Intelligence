@@ -4,20 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beranda - Moral Intelligence</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Moral Intelligence">
+    <meta name="description" content="Aplikasi pembelajaran moral intelligence untuk pengembangan karakter dan etika">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.svg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" sizes="32x32" href="/icons/icon-32x32.svg">
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/icons/icon-16x16.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .slide { transition: opacity 0.7s ease-in-out, transform 0.7s ease-in-out; }
-        .slide-active { opacity: 1; transform: translateX(0); }
-        .slide-inactive { opacity: 0; position: absolute; }
-        .slide-inactive-left { transform: translateX(-100%); }
-        .slide-inactive-right { transform: translateX(100%); }
         .hover-scale:hover { transform: scale(1.03); }
         .nav-button.active { color: #4f46e5; /* Indigo-600 */ }
+        #app-container {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .stat-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        #app-container {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out;
+        }
     </style>
+    <!-- PWA Installer -->
+    <script src="/pwa-installer.js"></script>
+    
     <script type="module" src="auth-guard.js"></script>
     <script type="module" src="auth-service.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-100">
 
@@ -38,11 +71,20 @@
                 </div>
             </div>
             
-            <!-- Quick Stats -->
+            <!-- Quick Stats - Rating dihapus, ditambah Active Days -->
             <div class="grid grid-cols-3 gap-4">
-                <div class="text-center"><p class="text-2xl font-bold">127</p><p class="text-indigo-200 text-xs">Hari Aktif</p></div>
-                <div class="text-center"><p class="text-2xl font-bold">23</p><p class="text-indigo-200 text-xs">Kasus Solved</p></div>
-                <div class="text-center"><p class="text-2xl font-bold">4.8</p><p class="text-indigo-200 text-xs">Rating</p></div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold stat-pulse" data-stat="active-days">0</p>
+                    <p class="text-indigo-200 text-xs">Hari Aktif</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold stat-pulse" data-stat="post-forum">0</p>
+                    <p class="text-indigo-200 text-xs">Post Forum</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold stat-pulse" data-stat="materi-selesai">0</p>
+                    <p class="text-indigo-200 text-xs">Materi Selesai</p>
+                </div>
             </div>
         </div>
 
@@ -51,9 +93,6 @@
             <div class="relative bg-white rounded-2xl shadow-lg overflow-hidden h-40">
                 <div id="slideshow-container" class="relative h-full">
                     <!-- Slides will be injected here -->
-                </div>
-                <div id="slide-indicators" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                    <!-- Indicators will be injected here -->
                 </div>
             </div>
 
@@ -89,6 +128,28 @@
                 </a>
             </div>
 
+            <!-- Activity Stats Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-lg">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">📊 Aktivitas Anda</h3>
+                    <button class="text-indigo-600 text-sm font-medium">Detail</button>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 bg-blue-50 rounded-xl">
+                        <p class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="forum-posts">0</p>
+                        <p class="text-sm text-blue-700">Forum Posts</p>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-xl">
+                        <p class="text-2xl font-bold text-green-600 stat-pulse" data-stat="materials-read">0</p>
+                        <p class="text-sm text-green-700">Materi Dibaca</p>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-xl">
+                        <p class="text-2xl font-bold text-purple-600 stat-pulse" data-stat="materials-completed">0</p>
+                        <p class="text-sm text-purple-700">Materi Selesai</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- News & Updates -->
             <div class="bg-white rounded-2xl p-6 shadow-lg">
                 <div class="flex items-center justify-between mb-4">
@@ -113,6 +174,52 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800">Hasil Quiz</h2>
+                <button onclick="closeResults()" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- Results Content -->
+                <div id="results-content">
+                    <!-- Content will be dynamically inserted here by JavaScript -->
+                </div>
+                
+                <!-- History Tab (initially hidden) -->
+                <div id="history-tab" class="hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Riwayat Quiz</h3>
+                        <button onclick="showResultsTab()" class="text-indigo-600 text-sm font-medium">
+                            Kembali ke Hasil
+                        </button>
+                    </div>
+                    <div id="quiz-history-container">
+                        <!-- History items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="showQuizHistory()" id="view-history-btn" class="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50">
+                    Lihat Riwayat
+                </button>
+                <button onclick="downloadResults()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    Unduh Hasil
+                </button>
             </div>
         </div>
     </div>
@@ -144,65 +251,19 @@
     </div>
 
     <script>
-        // --- STATE MANAGEMENT ---
-        let currentSlide = 0;
-        let slideInterval;
-
-        const slideData = [
-            { bg: 'from-orange-400 to-red-500', title: 'Diskon 50% Materi Premium', text: 'Akses semua konten eksklusif', icon: '🎓' },
-            { bg: 'from-green-400 to-emerald-500', title: 'Webinar Gratis', text: 'Strategi menghadapi remaja zaman now', icon: '📚' },
-            { bg: 'from-purple-400 to-pink-500', title: 'Konsultasi 1-on-1', text: 'Dengan ahli psikologi remaja', icon: '👨‍⚕️' }
-        ];
-
-        function initializeSlideshow() {
+        function initializePromoCard() {
             const container = document.getElementById('slideshow-container');
-            const indicatorsContainer = document.getElementById('slide-indicators');
-            if (!container || !indicatorsContainer) return;
+            if (!container) return;
 
-            container.innerHTML = slideData.map((slide, index) => `
-                <div class="slide absolute inset-0 transition-slide bg-gradient-to-r ${slide.bg} flex items-center justify-between p-6 text-white ${index === 0 ? 'slide-active' : 'slide-inactive slide-inactive-right'}">
+            container.innerHTML = `
+                <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 flex items-center justify-between p-6 text-white">
                     <div>
-                        <h3 class="text-lg font-bold mb-1">${slide.title}</h3>
-                        <p class="text-sm opacity-80">${slide.text}</p>
+                        <h3 class="text-lg font-bold mb-1">Diskon 50% Materi Premium</h3>
+                        <p class="text-sm opacity-80">Akses semua konten eksklusif</p>
                     </div>
-                    <div class="text-3xl">${slide.icon}</div>
+                    <div class="text-3xl">🎓</div>
                 </div>
-            `).join('');
-
-            indicatorsContainer.innerHTML = slideData.map((_, index) => 
-                `<div class="slide-indicator w-2 h-2 rounded-full transition-all ${index === 0 ? 'bg-white' : 'bg-white/50'}"></div>`
-            ).join('');
-
-            startSlideInterval();
-        }
-
-        function showSlide(index) {
-            const slides = document.querySelectorAll('.slide');
-            const indicators = document.querySelectorAll('.slide-indicator');
-            if (slides.length === 0) return;
-
-            slides.forEach((slide, i) => {
-                slide.classList.remove('slide-active', 'slide-inactive-left', 'slide-inactive-right');
-                if (i === index) {
-                    slide.classList.add('slide-active');
-                } else {
-                    slide.classList.add('slide-inactive', i < index ? 'slide-inactive-left' : 'slide-inactive-right');
-                }
-            });
-
-            indicators.forEach((indicator, i) => {
-                indicator.className = `w-2 h-2 rounded-full transition-all ${i === index ? 'bg-white scale-125' : 'bg-white/50'}`;
-            });
-        }
-        
-        function nextSlide() {
-            currentSlide = (currentSlide + 1) % slideData.length;
-            showSlide(currentSlide);
-        }
-
-        function startSlideInterval() {
-            clearInterval(slideInterval);
-            slideInterval = setInterval(nextSlide, 4000);
+            `;
         }
 
         function setActiveNav() {
@@ -223,7 +284,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initializeSlideshow();
+            initializePromoCard();
             setActiveNav();
             initializeAuth();
         });
@@ -323,6 +384,45 @@
                 document.getElementById('user-profession').textContent = 'Pendidik';
             }
         }
+    </script>
+
+    <!-- Import User Stats System (replaces realtime-stats and material-tracker) -->
+    <script type="module" src="user-stats.js"></script>
+    
+    <!-- Test Logic Script -->
+    <script src="test-logic.js"></script>
+    <script>
+        // Initialize quiz when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize quiz
+            if (typeof initializeQuiz !== 'undefined') {
+                initializeQuiz();
+            }
+            
+            // Make sure all required elements exist
+            const requiredElements = [
+                'results-modal', 'results-content', 'history-tab', 
+                'quiz-history-container', 'view-history-btn'
+            ];
+            
+            requiredElements.forEach(id => {
+                if (!document.getElementById(id)) {
+                    console.error(`Required element with ID '${id}' not found in the DOM`);
+                } else {
+                    console.log(`Element '${id}' found`);
+                }
+            });
+        });
+        
+        // Make functions globally available for inline event handlers (if they exist)
+        if (typeof initializeQuiz !== 'undefined') window.initializeQuiz = initializeQuiz;
+        if (typeof submitAnswer !== 'undefined') window.submitAnswer = submitAnswer;
+        if (typeof moveToNextQuestion !== 'undefined') window.moveToNextQuestion = moveToNextQuestion;
+        if (typeof moveToPreviousQuestion !== 'undefined') window.moveToPreviousQuestion = moveToPreviousQuestion;
+        if (typeof closeResults !== 'undefined') window.closeResults = closeResults;
+        if (typeof showQuizHistory !== 'undefined') window.showQuizHistory = showQuizHistory;
+        if (typeof showResultsTab !== 'undefined') window.showResultsTab = showResultsTab;
+        if (typeof downloadResults !== 'undefined') window.downloadResults = downloadResults;
     </script>
 </body>
 </html>

@@ -7,7 +7,7 @@
   "scripts": {
     "start": "live-server",
     "build": "echo 'No build step required for static site'",
-    "deploy": "firebase deploy",
+    "deploy": ".\\node_modules\\.bin\\firebase deploy",
     "test": "echo 'No tests specified'"
   },
   "keywords": [
@@ -22,7 +22,8 @@
   "license": "MIT",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
-    "live-server": "^1.2.2",
+    "firebase-tools": "^14.17.0",
+    "live-server": "^1.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13"
   },
@@ -38,6 +39,7 @@
   },
   "homepage": "https://moral-intelligence.web.app",
   "dependencies": {
+    "docx": "^8.5.0",
     "dotenv": "^17.2.2"
   }
 }
