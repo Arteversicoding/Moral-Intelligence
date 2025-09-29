@@ -74,10 +74,6 @@
                         <span class="font-medium text-gray-800" id="user-email">-</span>
                     </div>
                     <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-gray-600">ID Pengguna</span>
-                        <span class="font-mono text-sm text-gray-800" id="user-id">-</span>
-                    </div>
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
                         <span class="text-gray-600">Tanggal Bergabung</span>
                         <span class="font-medium text-gray-800" id="user-created">-</span>
                     </div>
@@ -88,32 +84,11 @@
                     <div class="flex justify-between items-center py-3">
                         <span class="text-gray-600">Status Akun</span>
                         <span class="px-3 py-1 text-sm font-medium rounded-full" id="account-status">
-                            <span class="flex items-center">
+                            <span class="flex items-center text-green-600">
                                 <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                                 Aktif
                             </span>
                         </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Account Verification -->
-            <div class="bg-white rounded-2xl p-6 shadow-lg">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-indigo-600"><path d="M9 12l2 2 4-4"/><path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1h-1V6a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1H2c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1h1v1a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-1h1z"/></svg>
-                    Verifikasi
-                </h2>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-gray-600">Email Terverifikasi</span>
-                        <span id="email-verified" class="flex items-center text-green-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M9 12l2 2 4-4"/><path d="M21 12c.552 0 1-.448 1-1V8c0-.552-.448-1-1-1h-1V6a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1H2c-.552 0-1 .448-1 1v3c0 .552.448 1 1 1h1v1a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-1h1z"/></svg>
-                            Terverifikasi
-                        </span>
-                    </div>
-                    <div class="flex justify-between items-center py-3">
-                        <span class="text-gray-600">Provider Login</span>
-                        <span class="font-medium text-gray-800" id="login-provider">-</span>
                     </div>
                 </div>
             </div>
@@ -133,15 +108,16 @@
     <script>
         async function loadAccountInfo() {
             try {
-                // Setup Firebase auth listener
                 const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
                 const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
                 const { auth, db } = await import('./firebase-init.js');
                 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
+                        console.log('User found:', user.uid);
                         await displayUserInfo(user);
                     } else {
+                        console.log('No user logged in');
                         showError();
                     }
                 });
@@ -153,35 +129,46 @@
                             email: user.email,
                             displayName: user.displayName || user.email.split('@')[0],
                             photoURL: user.photoURL,
-                            emailVerified: user.emailVerified,
                             creationTime: user.metadata.creationTime,
-                            lastSignInTime: user.metadata.lastSignInTime,
-                            providerId: user.providerData[0]?.providerId || 'password'
+                            lastSignInTime: user.metadata.lastSignInTime
                         };
+                        
+                        console.log('Basic user data:', userData);
                         
                         // Get additional data from Firestore
                         try {
                             const userDoc = await getDoc(doc(db, "users", user.uid));
                             if (userDoc.exists()) {
                                 const firestoreData = userDoc.data();
+                                console.log('Firestore data:', firestoreData);
                                 userData = {
                                     ...userData,
-                                    displayName: firestoreData.displayName || `${firestoreData.firstName} ${firestoreData.lastName}` || userData.displayName,
+                                    displayName: firestoreData.displayName || 
+                                               (firestoreData.firstName && firestoreData.lastName ? 
+                                                `${firestoreData.firstName} ${firestoreData.lastName}` : 
+                                                userData.displayName),
                                     profession: firestoreData.profession || 'Tidak disebutkan',
                                     institution: firestoreData.institution || 'Tidak disebutkan',
                                     role: firestoreData.role || 'user'
                                 };
+                            } else {
+                                console.log('No Firestore document found');
+                                userData.profession = 'Pendidik';
+                                userData.institution = 'Tidak disebutkan';
                             }
                         } catch (firestoreError) {
-                            console.log('Could not fetch Firestore data');
+                            console.log('Could not fetch Firestore data:', firestoreError);
+                            userData.profession = 'Pendidik';
+                            userData.institution = 'Tidak disebutkan';
                         }
+                        
+                        console.log('Final user data:', userData);
                         
                         // Update UI elements
                         document.getElementById('user-name').textContent = userData.displayName;
                         document.getElementById('user-profession').textContent = userData.profession;
                         document.getElementById('user-institution').textContent = userData.institution;
                         document.getElementById('user-email').textContent = userData.email;
-                        document.getElementById('user-id').textContent = userData.uid.substring(0, 8) + '...';
                         
                         // Format dates
                         const createdDate = new Date(userData.creationTime);
@@ -201,47 +188,20 @@
                             minute: '2-digit'
                         });
                         
-                        // Calculate days active
-                        const daysDiff = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-                        document.getElementById('days-active').textContent = daysDiff + '+';
-                        
                         // Update avatar
                         const avatar = document.getElementById('user-avatar');
                         if (userData.photoURL) {
                             avatar.innerHTML = `<img src="${userData.photoURL}" alt="Profile" class="w-full h-full rounded-full object-cover">`;
                         } else {
-                            const initials = userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase();
-                            avatar.textContent = initials.length <= 2 ? initials : '👤';
+                            const initials = userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                            avatar.textContent = initials || '👤';
                         }
-                        
-                        // Update email verification status
-                        const emailVerified = document.getElementById('email-verified');
-                        if (userData.emailVerified) {
-                            emailVerified.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polyline points="20 6 9 17 4 12"/></svg>
-                                Terverifikasi
-                            `;
-                            emailVerified.className = 'flex items-center text-green-600';
-                        } else {
-                            emailVerified.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><circle cx="12" cy="12" r="10"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg>
-                                Belum Terverifikasi
-                            `;
-                            emailVerified.className = 'flex items-center text-red-600';
-                        }
-                        
-                        // Update login provider
-                        let providerName = 'Email & Password';
-                        if (userData.providerId === 'google.com') {
-                            providerName = 'Google';
-                        } else if (userData.providerId === 'facebook.com') {
-                            providerName = 'Facebook';
-                        }
-                        document.getElementById('login-provider').textContent = providerName;
                         
                         // Show account info and hide loading
                         document.getElementById('loading-state').classList.add('hidden');
                         document.getElementById('account-info').classList.remove('hidden');
+                        
+                        console.log('Profile updated successfully');
                         
                     } catch (error) {
                         console.error('Error displaying user info:', error);
@@ -261,7 +221,6 @@
             document.getElementById('error-state').classList.remove('hidden');
         }
         
-        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', loadAccountInfo);
     </script>
 </body>

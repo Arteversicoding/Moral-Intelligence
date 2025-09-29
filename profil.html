@@ -8,7 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .nav-button.active { color: #4f46e5; /* Indigo-600 */ }
+        .nav-button.active { color: #4f46e5; }
+        .hover-scale:hover { transform: scale(1.03); }
         .stat-pulse {
             animation: pulse 2s infinite;
         }
@@ -16,180 +17,178 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
+        #app-container {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out;
+        }
     </style>
     <script type="module" src="auth-guard.js"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-100">
 
-    <!-- Main App Container -->
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-90 z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Memuat informasi akun...</p>
+        </div>
+    </div>
+
     <div id="app-container" class="pb-24">
-        <!-- Profile Header -->
-        <div class="bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 text-white p-6 rounded-b-3xl shadow-xl">
-            <div class="flex items-center space-x-4">
-                <div id="profile-avatar" class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl">👤</div>
-                <div class="flex-1">
-                    <h2 id="profile-name" class="text-2xl font-bold">Loading...</h2>
-                    <p id="profile-profession" class="text-pink-200">Loading...</p>
+        <!-- Header with Inline Stats -->
+        <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-6 rounded-b-3xl shadow-xl">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold">Profil Saya</h1>
+                    <p class="text-indigo-100 text-xs mt-1">Kelola akun dan pengaturan</p>
                 </div>
-                <button class="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                </button>
+                <div class="relative">
+                    <div id="header-avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg font-bold">
+                        👤
+                    </div>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-indigo-700"></div>
+                </div>
+            </div>
+
+            <!-- Stats Inside Header -->
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-3xl font-bold stat-pulse" data-stat="active-days">0</p>
+                    <p class="text-white/80 text-xs mt-1">Hari Aktif</p>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold stat-pulse" data-stat="post-forum">0</p>
+                    <p class="text-white/80 text-xs mt-1">Post Forum</p>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold stat-pulse" data-stat="quiz-completed">0</p>
+                    <p class="text-white/80 text-xs mt-1">Quiz Selesai</p>
+                </div>
             </div>
         </div>
 
         <div class="p-6 space-y-6">
-            <!-- Account Stats - Rating dihapus, ditambah tracking realtime -->
-            <div class="grid grid-cols-3 gap-4 text-center">
-                <div class="bg-white rounded-xl p-4 shadow-lg">
-                    <p class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="active-days">0</p>
-                    <p class="text-sm text-gray-500">Hari Aktif</p>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-lg">
-                    <p class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="forum-posts">0</p>
-                    <p class="text-sm text-gray-500">Post Forum</p>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-lg">
-                    <p class="text-2xl font-bold text-green-600 stat-pulse" data-stat="materials-completed">0</p>
-                    <p class="text-sm text-gray-500">Materi Selesai</p>
-                </div>
-            </div>
 
-            <!-- Detailed Activity Stats -->
-            <div class="bg-white rounded-2xl p-6 shadow-lg">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-indigo-600"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                    Statistik Aktivitas
-                </h3>
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Post di Forum</p>
-                                <p class="text-sm text-gray-500">Kontribusi diskusi</p>
-                            </div>
-                        </div>
-                        <span class="text-2xl font-bold text-blue-600 stat-pulse" data-stat="forum-posts">0</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-xl">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Materi Dibaca</p>
-                                <p class="text-sm text-gray-500">Total yang dibuka</p>
-                            </div>
-                        </div>
-                        <span class="text-2xl font-bold text-green-600 stat-pulse" data-stat="materials-read">0</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Materi Selesai</p>
-                                <p class="text-sm text-gray-500">Dibaca hingga akhir</p>
-                            </div>
-                        </div>
-                        <span class="text-2xl font-bold text-purple-600 stat-pulse" data-stat="materials-completed">0</span>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4l-3 3h18l-3-3V2z"/><path d="M16 4v4l3 3H5l3-3V4"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Hari Aktif</p>
-                                <p class="text-sm text-gray-500">Konsistensi belajar</p>
-                            </div>
-                        </div>
-                        <span class="text-2xl font-bold text-orange-600 stat-pulse" data-stat="active-days">0</span>
+            <!-- Profile Section - With Gradient Background -->
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 shadow-md flex items-center space-x-4">
+                <div id="user-avatar" class="w-14 h-14 bg-white/30 rounded-full flex items-center justify-center text-2xl text-white font-bold">
+                    👤
+                </div>
+                <div class="flex-1">
+                    <h3 id="user-name" class="text-base font-semibold text-white">Loading...</h3>
+                    <p id="user-profession" class="text-white/80 text-xs mb-1">Loading...</p>
+                    <div class="flex flex-wrap text-xs text-white/70 gap-3">
+                        <span><strong>Email:</strong> <span id="user-email">Loading...</span></span>
+                        <span><strong>Role:</strong> <span id="user-role">Loading...</span></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Progress Overview -->
-            <div class="bg-white rounded-2xl p-6 shadow-lg">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    Progress Belajar
-                </h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-sm text-gray-600 mb-2">
-                            <span>Completion Rate</span>
-                            <span id="completion-percentage">0%</span>
+            <!-- Menu Cards - White Background -->
+            <div class="grid grid-cols-1 gap-4">
+                <a href="account-info.html" class="bg-white rounded-2xl p-5 shadow-md flex items-center justify-between hover-scale transition-all">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full p-3 w-fit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-3">
-                            <div id="completion-progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 mt-4">
-                        <div class="text-center p-3 bg-green-50 rounded-lg">
-                            <p class="text-lg font-bold text-green-600" data-stat="materials-read">0</p>
-                            <p class="text-xs text-green-700">Started</p>
-                        </div>
-                        <div class="text-center p-3 bg-blue-50 rounded-lg">
-                            <p class="text-lg font-bold text-blue-600" data-stat="materials-completed">0</p>
-                            <p class="text-xs text-blue-700">Completed</p>
+                        <div>
+                            <h3 class="font-semibold text-sm text-gray-800">Informasi Akun</h3>
+                            <p class="text-gray-500 text-xs">Data pribadi & detail</p>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Menu List -->
-            <div class="bg-white rounded-2xl p-4 shadow-lg space-y-1">
-                <a href="account-info.html" class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
-                    <span class="font-medium text-gray-700">Informasi Akun</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="9 18 15 12 9 6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M9 5l7 7-7 7" />
+                    </svg>
                 </a>
-                <a href="privacy-security.html" class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
-                    <span class="font-medium text-gray-700">Privasi & Keamanan</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="9 18 15 12 9 6"/></svg>
+
+                <a href="privacy-security.html" class="bg-white rounded-2xl p-5 shadow-md flex items-center justify-between hover-scale transition-all">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-gradient-to-br from-green-400 to-emerald-500 rounded-full p-3 w-fit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm text-gray-800">Privasi & Keamanan</h3>
+                            <p class="text-gray-500 text-xs">Password & pengaturan</p>
+                        </div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M9 5l7 7-7 7" />
+                    </svg>
                 </a>
-                <a href="feedback-survey.html" class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
-                    <span class="font-medium text-gray-700">Saran & Kritik</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="9 18 15 12 9 6"/></svg>
+
+                <a href="feedback-survey.html" class="bg-white rounded-2xl p-5 shadow-md flex items-center justify-between hover-scale transition-all">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-3 w-fit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm text-gray-800">Saran & Kritik</h3>
+                            <p class="text-gray-500 text-xs">Bantu kami berkembang</p>
+                        </div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M9 5l7 7-7 7" />
+                    </svg>
                 </a>
             </div>
-            
+
             <!-- Logout Button -->
-            <button id="logout-button" class="w-full bg-red-100 text-red-600 font-medium py-4 rounded-2xl shadow-md hover:bg-red-200 transition-colors">
-                Keluar
+            <button id="logout-button" class="w-full bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-2xl p-5 shadow-md hover-scale transition-all flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span class="font-semibold text-sm">Keluar</span>
             </button>
         </div>
     </div>
 
     <!-- Bottom Navigation -->
-    <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 p-4 z-50">
+    <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 p-3 z-50">
         <div class="flex justify-around items-center max-w-lg mx-auto">
-            <a href="index.html" data-page="home" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                <span class="text-xs font-medium">Beranda</span>
+            <a href="index.html" data-page="home" class="nav-button flex flex-col items-center text-gray-500 text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                Beranda
             </a>
-            <a href="chat.html" data-page="chat" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span class="text-xs font-medium">Quiz</span>
+            <a href="chat.html" data-page="chat" class="nav-button flex flex-col items-center text-gray-500 text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Quiz
             </a>
-            <a href="forum.html" data-page="forum" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span class="text-xs font-medium">Forum</span>
+            <a href="forum.html" data-page="forum" class="nav-button flex flex-col items-center text-gray-500 text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Forum
             </a>
-            <a href="materi.html" data-page="materi" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                <span class="text-xs font-medium">Materi</span>
+            <a href="materi.html" data-page="materi" class="nav-button flex flex-col items-center text-gray-500 text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                Materi
             </a>
-            <a href="profil.html" data-page="profile" class="nav-button flex flex-col items-center space-y-1 text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span class="text-xs font-medium">Profil</span>
+            <a href="profil.html" data-page="profile" class="nav-button flex flex-col items-center text-gray-500 text-xs font-medium active">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                Profil
             </a>
         </div>
     </div>
@@ -199,48 +198,70 @@
             document.querySelectorAll('.nav-button').forEach(button => {
                 if (button.dataset.page === 'profile') {
                     button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
                 }
             });
         }
         
-        // Update completion rate
-        function updateCompletionRate() {
-            const materialsRead = parseInt(document.querySelector('[data-stat="materials-read"]')?.textContent || '0');
-            const materialsCompleted = parseInt(document.querySelector('[data-stat="materials-completed"]')?.textContent || '0');
-            
-            const completionRate = materialsRead > 0 ? Math.round((materialsCompleted / materialsRead) * 100) : 0;
-            
-            const completionPercentage = document.getElementById('completion-percentage');
-            const completionProgressBar = document.getElementById('completion-progress-bar');
-            
-            if (completionPercentage) {
-                completionPercentage.textContent = `${completionRate}%`;
-            }
-            if (completionProgressBar) {
-                completionProgressBar.style.width = `${completionRate}%`;
-            }
-        }
-        
         document.addEventListener('DOMContentLoaded', () => {
             setActiveNav();
+            trackUserLogin();
             initializeAuth();
-            
-            // Update completion rate when stats change
-            setInterval(updateCompletionRate, 1000);
         });
+
+        function trackUserLogin() {
+            try {
+                const today = new Date().toDateString();
+                let loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
+                
+                if (!loginDates.includes(today)) {
+                    loginDates.push(today);
+                    localStorage.setItem('userLoginDates', JSON.stringify(loginDates));
+                    console.log('Login tracked for:', today);
+                    console.log('Total active days:', loginDates.length);
+                }
+                
+                updateActiveDaysDisplay();
+            } catch (error) {
+                console.error('Error tracking login:', error);
+            }
+        }
+
+        function updateActiveDaysDisplay() {
+            try {
+                const loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
+                const activeDaysElements = document.querySelectorAll('[data-stat="active-days"]');
+                activeDaysElements.forEach(el => {
+                    if (el) el.textContent = loginDates.length;
+                });
+            } catch (error) {
+                console.error('Error updating active days display:', error);
+            }
+        }
 
         async function initializeAuth() {
             try {
-                // Set up real-time auth state listener
+                document.getElementById('loading-overlay').style.display = 'flex';
+                document.getElementById('app-container').style.opacity = '0';
+                document.getElementById('app-container').style.visibility = 'hidden';
+                
                 const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
                 const { auth } = await import('./firebase-init.js');
                 
                 onAuthStateChanged(auth, async (user) => {
                     await updateUserProfile(user);
+                    
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    document.getElementById('app-container').style.opacity = '1';
+                    document.getElementById('app-container').style.visibility = 'visible';
                 });
                 
             } catch (error) {
                 console.error('Error initializing auth:', error);
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.getElementById('app-container').style.opacity = '1';
+                document.getElementById('app-container').style.visibility = 'visible';
                 updateUserProfile(null);
             }
         }
@@ -248,72 +269,120 @@
         async function updateUserProfile(user) {
             try {
                 if (user) {
-                    // Get additional user data from Firestore
-                    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-                    const { db } = await import('./firebase-init.js');
-                    
                     let userData = {
                         uid: user.uid,
                         email: user.email,
-                        displayName: user.displayName || user.email,
+                        displayName: user.displayName || user.email?.split('@')[0] || 'User',
                         photoURL: user.photoURL,
                         role: 'user'
                     };
                     
-                    // Try to get additional data from Firestore
                     try {
+                        const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                        const { db } = await import('./firebase-init.js');
+                        
                         const userDoc = await getDoc(doc(db, "users", user.uid));
                         if (userDoc.exists()) {
                             const firestoreData = userDoc.data();
                             userData = {
                                 ...userData,
-                                displayName: firestoreData.displayName || `${firestoreData.firstName} ${firestoreData.lastName}` || userData.displayName,
+                                displayName: firestoreData.displayName || 
+                                           (firestoreData.firstName && firestoreData.lastName ? 
+                                            `${firestoreData.firstName} ${firestoreData.lastName}` : 
+                                            userData.displayName),
                                 role: firestoreData.role || 'user',
-                                profession: firestoreData.profession,
+                                profession: firestoreData.profession || 'Pendidik',
                                 institution: firestoreData.institution
                             };
+                        } else {
+                            userData.profession = 'Pendidik';
                         }
                     } catch (firestoreError) {
-                        console.log('Could not fetch Firestore data, using basic auth data');
+                        console.log('Could not fetch Firestore data:', firestoreError);
+                        userData.profession = 'Pendidik';
                     }
                     
-                    // Update profile name
-                    document.getElementById('profile-name').textContent = userData.displayName || 'User';
+                    document.getElementById('user-name').textContent = userData.displayName;
+                    document.getElementById('user-email').textContent = userData.email;
+                    document.getElementById('user-role').textContent = userData.role;
+                   
+                    const profession = userData.profession
+                        ? userData.profession
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ')
+                        : 'Pendidik';
+                    document.getElementById('user-profession').textContent = profession;
+
                     
-                    // Update profession
-                    if (userData.profession) {
-                        document.getElementById('profile-profession').textContent = userData.profession;
-                    } else {
-                        document.getElementById('profile-profession').textContent = 'Pendidik';
-                    }
+                    const avatars = [
+                        document.getElementById('user-avatar'),
+                        document.getElementById('header-avatar')
+                    ];
                     
-                    // Update avatar
-                    const avatar = document.getElementById('profile-avatar');
-                    if (userData.photoURL) {
-                        avatar.innerHTML = `<img src="${userData.photoURL}" alt="Profile" class="w-full h-full rounded-full object-cover">`;
-                    } else {
-                        // Use initials or default emoji
-                        const initials = userData.displayName ? 
-                            userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase() : 
-                            '👤';
-                        avatar.textContent = initials.length <= 2 ? initials : '👤';
-                    }
+                    avatars.forEach(avatar => {
+                        if (avatar) {
+                            if (userData.photoURL) {
+                                avatar.innerHTML = `<img src="${userData.photoURL}" alt="Profile" class="w-full h-full rounded-full object-cover">`;
+                            } else {
+                                const initials = userData.displayName ? 
+                                    userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 
+                                    '👤';
+                                // For profile card avatar (with gradient bg), use white text
+                                if (avatar.id === 'user-avatar') {
+                                    avatar.className = 'w-14 h-14 bg-white/30 rounded-full flex items-center justify-center text-2xl text-white font-bold';
+                                }
+                                avatar.textContent = initials.length <= 2 ? initials : '👤';
+                            }
+                        }
+                    });
+                    
                 } else {
-                    // User is logged out
-                    document.getElementById('profile-name').textContent = 'Guest User';
-                    document.getElementById('profile-profession').textContent = 'Visitor';
-                    document.getElementById('profile-avatar').textContent = '👤';
+                    document.getElementById('user-name').textContent = 'Guest User';
+                    document.getElementById('user-profession').textContent = 'Visitor';
+                    document.getElementById('user-email').textContent = 'guest@example.com';
+                    document.getElementById('user-role').textContent = 'guest';
+                    document.getElementById('user-avatar').textContent = '👤';
+                    document.getElementById('header-avatar').textContent = '👤';
                 }
+
+                updateStatistics();
+                
             } catch (error) {
                 console.error('Error updating user profile:', error);
-                // Fallback values
-                document.getElementById('profile-name').textContent = 'User';
-                document.getElementById('profile-profession').textContent = 'Pendidik';
+                document.getElementById('user-name').textContent = 'Error Loading';
+                document.getElementById('user-profession').textContent = 'Unable to load';
+                document.getElementById('user-email').textContent = 'error@example.com';
+                document.getElementById('user-role').textContent = 'user';
+            }
+        }
+
+        function updateStatistics() {
+            try {
+                const quizHistory = JSON.parse(localStorage.getItem('quizHistory') || '[]');
+                const quizElements = document.querySelectorAll('[data-stat="quiz-completed"]');
+                quizElements.forEach(el => {
+                    if (el) el.textContent = quizHistory.length;
+                });
+                
+                const loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
+                const activeDaysElements = document.querySelectorAll('[data-stat="active-days"]');
+                activeDaysElements.forEach(el => {
+                    if (el) el.textContent = loginDates.length;
+                });
+                
+                const forumPosts = localStorage.getItem('userForumPosts') || '0';
+                const forumElements = document.querySelectorAll('[data-stat="post-forum"]');
+                forumElements.forEach(el => {
+                    if (el) el.textContent = forumPosts;
+                });
+                
+            } catch (error) {
+                console.error('Error updating statistics:', error);
             }
         }
     </script>
     
-    <!-- Import User Stats System (replaces realtime-stats) -->
     <script type="module" src="user-stats.js"></script>
     
     <script type="module">
@@ -323,13 +392,15 @@
             const logoutButton = document.getElementById('logout-button');
             if (logoutButton) {
                 logoutButton.addEventListener('click', async () => {
-                    const authService = new AuthService();
-                    try {
-                        await authService.logout();
-                        window.location.href = 'login.html';
-                    } catch (error) {
-                        console.error('Logout error:', error);
-                        alert('Gagal logout. Silakan coba lagi.');
+                    if (confirm('Apakah Anda yakin ingin keluar?')) {
+                        const authService = new AuthService();
+                        try {
+                            await authService.logout();
+                            window.location.href = 'login.html';
+                        } catch (error) {
+                            console.error('Logout error:', error);
+                            alert('Gagal logout. Silakan coba lagi.');
+                        }
                     }
                 });
             }

@@ -268,84 +268,61 @@
             </a>
         </div>
     </div>
-
-    <script>
-        // Simple localStorage-based solution without Firebase
+    <script type="module">
+        import { db } from './firebase-init.js';
+        import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('survey-form').addEventListener('submit', handleSurveySubmit);
+          document.getElementById('survey-form').addEventListener('submit', handleSurveySubmit);
         });
-
-        function handleSurveySubmit(e) {
-            e.preventDefault();
-            
-            try {
-                // Get user data from localStorage (set by auth system)
-                const userData = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (!userData.email) {
-                    alert('Anda harus login untuk mengirim feedback.');
-                    return;
-                }
-
-                // Collect form data
-                const formData = new FormData(e.target);
-                const surveyData = {
-                    userId: userData.uid || 'anonymous',
-                    userEmail: userData.email,
-                    userName: userData.displayName || userData.email || 'Anonymous',
-                    
-                    // Rating questions (1-10)
-                    ratings: {
-                        textReadability: parseInt(formData.get('q1')),
-                        colorLayout: parseInt(formData.get('q2')),
-                        attractiveDesign: parseInt(formData.get('q3')),
-                        crossPlatform: parseInt(formData.get('q4')),
-                        easeOfUse: parseInt(formData.get('q5')),
-                        chatbotRelevance: parseInt(formData.get('q6')),
-                        mediaSupport: parseInt(formData.get('q7')),
-                        materialClarity: parseInt(formData.get('q8')),
-                        questionVariety: parseInt(formData.get('q9')),
-                        learningSupport: parseInt(formData.get('q10'))
-                    },
-                    
-                    // Usage information
-                    device: formData.get('device'),
-                    frequency: formData.get('frequency'),
-                    mostUsedFeature: formData.get('mostUsedFeature'),
-                    purpose: formData.get('purpose'),
-                    
-                    // Additional feedback
-                    additionalFeedback: document.getElementById('additionalFeedback').value,
-                    
-                    // Metadata
-                    timestamp: new Date().toISOString()
-                };
-
-                // Save to localStorage instead of Firestore
-                const existingSurveys = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
-                existingSurveys.push(surveyData);
-                localStorage.setItem('surveyResponses', JSON.stringify(existingSurveys));
-
-                // Show success message
-                const successMessage = document.getElementById('success-message');
-                successMessage.classList.remove('hidden');
-                
-                // Reset form
-                e.target.reset();
-                
-                // Scroll to top to show message
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
-                // Hide success message after 5 seconds
-                setTimeout(() => {
-                    successMessage.classList.add('hidden');
-                }, 5000);
-
-            } catch (error) {
-                console.error('Error submitting survey:', error);
-                alert('Gagal mengirim feedback. Silakan coba lagi.');
+    
+        async function handleSurveySubmit(e) {
+          e.preventDefault();
+          try {
+            const userData = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (!userData.email) {
+              alert('Anda harus login untuk mengirim feedback.');
+              return;
             }
+    
+            const formData = new FormData(e.target);
+            const surveyData = {
+              userId: userData.uid || 'anonymous',
+              userEmail: userData.email,
+              userName: userData.displayName || userData.email || 'Anonymous',
+              ratings: {
+                textReadability: parseInt(formData.get('q1')),
+                colorLayout: parseInt(formData.get('q2')),
+                attractiveDesign: parseInt(formData.get('q3')),
+                crossPlatform: parseInt(formData.get('q4')),
+                easeOfUse: parseInt(formData.get('q5')),
+                chatbotRelevance: parseInt(formData.get('q6')),
+                mediaSupport: parseInt(formData.get('q7')),
+                materialClarity: parseInt(formData.get('q8')),
+                questionVariety: parseInt(formData.get('q9')),
+                learningSupport: parseInt(formData.get('q10')),
+              },
+              device: formData.get('device'),
+              frequency: formData.get('frequency'),
+              mostUsedFeature: formData.get('mostUsedFeature'),
+              purpose: formData.get('purpose'),
+              additionalFeedback: document.getElementById('additionalFeedback').value,
+              timestamp: serverTimestamp(),
+            };
+    
+            await addDoc(collection(db, 'surveyResponses'), surveyData);
+    
+            const successMessage = document.getElementById('success-message');
+            successMessage.classList.remove('hidden');
+            e.target.reset();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => successMessage.classList.add('hidden'), 5000);
+          } catch (error) {
+            console.error('Error submitting survey:', error);
+            alert('Gagal mengirim feedback. Silakan coba lagi.');
+          }
         }
-    </script>
+      </script>
     <!-- Hapus script localStorage lama, ganti dengan: -->
     <script type="module" src="survey-firebase-handler.js"></script>
     <script type="module" src="./firebase-init.js"></script>

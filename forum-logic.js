@@ -1,7 +1,7 @@
 
 import { db, auth } from './firebase-init.js';
 import { collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, increment, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     const newPostButton = document.getElementById('new-post-button');
@@ -35,39 +35,40 @@ document.addEventListener('DOMContentLoaded', () => {
         newPostModal.classList.add('hidden');
     });
 
-    // Handle new post submission
     newPostForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentUser) {
-            alert('Anda harus login untuk membuat post.');
-            return;
+          alert('Anda harus login untuk membuat post.');
+          return;
         }
-
+      
         const title = document.getElementById('post-title').value;
         const content = document.getElementById('post-content').value;
-
+        const category = document.getElementById('post-category').value;
+      
         try {
-            await addDoc(collection(db, 'posts'), {
-                title,
-                content,
-                author: currentUser.displayName || 'Anonymous',
-                authorId: currentUser.uid,
-                createdAt: serverTimestamp(),
-                likes: 0,
-                comments: []
-            });
-  
-            if (typeof window.incrementForumPosts === 'function') {
-                window.incrementForumPosts();
-            }
-            
-            newPostForm.reset();
-            newPostModal.classList.add('hidden');
-            fetchPosts();
+          await addDoc(collection(db, 'posts'), {
+            title,
+            content,
+            category,
+            author: currentUser.displayName || currentUser.email || 'Anonymous',
+            authorId: currentUser.uid,
+            createdAt: serverTimestamp(),
+            likes: 0,
+            comments: []
+          });
+      
+          if (typeof window.incrementForumPosts === 'function') {
+            window.incrementForumPosts();
+          }
+      
+          newPostForm.reset();
+          newPostModal.classList.add('hidden');
+          fetchPosts();
         } catch (error) {
-            console.error("Error adding document: ", error);
+          console.error("Error adding document: ", error);
         }
-    });
+      });
 
     // Fetch and display posts
     async function fetchPosts() {
@@ -133,35 +134,37 @@ document.addEventListener('DOMContentLoaded', () => {
         ` : '';
 
         postElement.innerHTML = `
-            <div class="flex items-start space-x-4">
-                <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">${post.author.substring(0, 2).toUpperCase()}</div>
-                <div class="flex-1">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-bold text-gray-800">${post.author}</h4>
-                        <div class="flex items-center">
-                            <span class="text-gray-400 text-xs">${post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : 'Baru saja'}</span>
-                            ${ownerActions}
-                        </div>
-                    </div>
-                    <h3 id="post-title-${id}" class="font-semibold text-gray-800 mb-2">${post.title}</h3>
-                    <p id="post-content-${id}" class="text-gray-600 text-sm mb-3">${post.content}</p>
-                    <div class="flex items-center justify-between text-sm text-gray-500">
-                        <div class="flex space-x-4">
-                            <button data-id="${id}" class="like-button">👍 ${post.likes || 0}</button>
-                            <button data-id="${id}" class="comment-button">💬 ${(post.comments || []).length}</button>
-                        </div>
-                    </div>
-                    <div id="comments-section-${id}" class="mt-4 hidden">
-                        <div id="comments-list-${id}" class="space-y-2 mb-4">
-                            ${(post.comments || []).map((comment, index) => createCommentElement(id, comment, index)).join('')}
-                        </div>
-                        <form class="add-comment-form" data-id="${id}">
-                            <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Tulis komentar..." required>
-                            <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm mt-2">Kirim</button>
-                        </form>
-                    </div>
+        <div class="flex items-start space-x-4">
+            <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">${post.author.substring(0, 2).toUpperCase()}</div>
+            <div class="flex-1">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="font-bold text-gray-800">${post.author}</h4>
+                <div class="flex items-center">
+                <span class="text-gray-400 text-xs">${post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : 'Baru saja'}</span>
+                ${ownerActions}
                 </div>
             </div>
+            <h3 id="post-title-${id}" class="font-semibold text-gray-800 mb-2">${post.title}</h3>
+            <p id="post-content-${id}" class="text-gray-600 text-sm mb-3">${post.content}</p>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+                <div class="flex space-x-4">
+                <button data-id="${id}" class="like-button">👍 ${post.likes || 0}</button>
+                <button data-id="${id}" class="comment-button">💬 ${(post.comments || []).length}</button>
+                </div>
+                ${post.category ? `<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">${post.category}</span>` : ''}
+            </div>
+            <!-- Comments Section -->
+            <div id="comments-section-${id}" class="mt-4 hidden">
+                <div id="comments-list-${id}" class="space-y-2 mb-4">
+                ${(post.comments || []).map((comment, index) => createCommentElement(id, comment, index)).join('')}
+                </div>
+                <form class="add-comment-form" data-id="${id}">
+                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Tulis komentar..." required>
+                <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm mt-2">Kirim</button>
+                </form>
+            </div>
+            </div>
+        </div>
         `;
         return postElement;
     }
@@ -353,13 +356,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 deletedPosts.push(postId);
                 localStorage.setItem('deletedPosts', JSON.stringify(deletedPosts));
             }
-            
             fetchPosts(); // Refresh to remove deleted post
             alert('Postingan berhasil dihapus!');
         } catch (error) {
             console.error("Error deleting post: ", error);
             alert('Gagal menghapus postingan!');
         }
+        if (typeof window.decrementForumPosts === 'function') {
+            window.decrementForumPosts();
+          }
     }
 
     // Edit comment function

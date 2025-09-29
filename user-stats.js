@@ -39,12 +39,29 @@ class UserStatsManager {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 this.currentUser = user;
+
+                // Real-time active days calculation
+                if (user.metadata.creationTime) {
+                    const creationTime = new Date(user.metadata.creationTime);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - creationTime);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    // Directly update the DOM for active-days
+                    document.querySelectorAll('[data-stat="active-days"]').forEach(el => {
+                        el.textContent = diffDays;
+                    });
+                }
+
                 this.initializeUserStats();
                 this.updateLastActiveDate();
                 this.startRealtimeListeners();
             } else {
                 this.currentUser = null;
                 this.cleanup();
+                 // Reset display on logout
+                document.querySelectorAll('[data-stat="active-days"]').forEach(el => {
+                    el.textContent = 0;
+                });
             }
         });
     }
@@ -515,12 +532,6 @@ class UserStatsManager {
         berandaMateriElements.forEach(el => {
             el.textContent = this.statsCache.materialsCompleted;
         });
-
-        // Update active days
-        const activeDaysElements = document.querySelectorAll('[data-stat="active-days"]');
-        activeDaysElements.forEach(el => {
-            el.textContent = this.statsCache.activeDays || 0;
-        });
     }
 
     updateGlobalStats(statType, value) {
@@ -654,6 +665,262 @@ class UserStatsManager {
         }
     }
 }
+
+// user-stats.js - Script untuk mengambil dan menampilkan statistik pengguna
+console.log('🔄 Loading user stats...');
+
+// Function to get quiz history from localStorage
+function getQuizHistory() {
+    try {
+        const data = localStorage.getItem('quizHistory');
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.warn('Error loading quiz history:', error);
+        return [];
+    }
+}
+
+// Function to get forum posts count (placeholder - sesuaikan dengan sistem forum Anda)
+function getForumPostsCount() {
+    try {
+        const count = localStorage.getItem('userForumPosts');
+        return count ? parseInt(count, 10) : 0;
+    } catch (error) {
+        console.warn('Error loading forum posts count:', error);
+        return 0;
+    }
+}
+
+// Function to calculate active days from quiz history
+function getActiveDaysCount() {
+    try {
+        const quizHistory = getQuizHistory();
+        const uniqueDays = new Set();
+        
+        quizHistory.forEach(quiz => {
+            if (quiz.date) {
+                const date = new Date(quiz.date).toDateString();
+                uniqueDays.add(date);
+            }
+        });
+        
+        // Also add today if user has visited
+        const today = new Date().toDateString();
+        uniqueDays.add(today);
+        
+        return uniqueDays.size;
+    } catch (error) {
+        console.warn('Error calculating active days:', error);
+        return 0;
+    }
+}
+
+// Function to calculate average quiz score
+function getAverageQuizScore() {
+    try {
+        const quizHistory = getQuizHistory();
+        
+        if (quizHistory.length === 0) {
+            return 0;
+        }
+        
+        const totalScore = quizHistory.reduce((sum, quiz) => {
+            return sum + (quiz.overallScore || 0);
+        }, 0);
+        
+        return Math.round(totalScore / quizHistory.length);
+    } catch (error) {
+        console.warn('Error calculating average score:', error);
+        return 0;
+    }
+}
+
+// Function to update all statistics in the profile page
+function updateUserStatistics() {
+    try {
+        console.log('📊 Updating user statistics...');
+        
+        // Get statistics data
+        const activeDays = getActiveDaysCount();
+        const forumPosts = getForumPostsCount();
+        const quizCompleted = getQuizHistory().length;
+        const averageScore = getAverageQuizScore();
+        
+        // Update DOM elements
+        const activeDaysEl = document.querySelector('[data-stat="active-days"]');
+        const forumPostsEl = document.querySelector('[data-stat="forum-posts"]');
+        const quizCompletedEl = document.querySelector('[data-stat="quiz-completed"]');
+        const avgScoreEl = document.querySelector('[data-stat="avg-score"]');
+        
+        if (activeDaysEl) {
+            activeDaysEl.textContent = activeDays;
+            animateNumber(activeDaysEl, activeDays);
+        }
+        
+        if (forumPostsEl) {
+            forumPostsEl.textContent = forumPosts;
+            animateNumber(forumPostsEl, forumPosts);
+        }
+        
+        if (quizCompletedEl) {
+            quizCompletedEl.textContent = quizCompleted;
+            animateNumber(quizCompletedEl, quizCompleted);
+        }
+        
+        if (avgScoreEl) {
+            avgScoreEl.textContent = averageScore;
+            animateNumber(avgScoreEl, averageScore);
+        }
+        
+        console.log('✅ User statistics updated:', {
+            activeDays,
+            forumPosts,
+            quizCompleted,
+            averageScore
+        });
+        
+    } catch (error) {
+        console.error('Error updating user statistics:', error);
+    }
+}
+
+// Function to animate numbers
+function animateNumber(element, targetNumber) {
+    const startNumber = 0;
+    const duration = 1000; // 1 second
+    const startTime = performance.now();
+    
+    function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentNumber = Math.floor(easeOutQuart * targetNumber);
+        
+        element.textContent = currentNumber;
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateNumber);
+        } else {
+            element.textContent = targetNumber;
+        }
+    }
+    
+    requestAnimationFrame(updateNumber);
+}
+
+// Function to increment forum posts (untuk testing atau ketika user posting di forum)
+function incrementForumPosts() {
+    try {
+        const currentCount = getForumPostsCount();
+        const newCount = currentCount + 1;
+        localStorage.setItem('userForumPosts', newCount.toString());
+        
+        // Update display if element exists
+        const forumPostsEl = document.querySelector('[data-stat="forum-posts"]');
+        if (forumPostsEl) {
+            forumPostsEl.textContent = newCount;
+            animateNumber(forumPostsEl, newCount);
+        }
+        
+        console.log('📝 Forum posts incremented to:', newCount);
+        return newCount;
+    } catch (error) {
+        console.error('Error incrementing forum posts:', error);
+        return 0;
+    }
+}
+
+function decrementForumPosts() {
+  try {
+    const currentCount = getForumPostsCount();
+    const newCount = currentCount > 0 ? currentCount - 1 : 0;
+    localStorage.setItem('userForumPosts', newCount.toString());
+
+    // Update display if element exists
+    const forumPostsEl = document.querySelector('[data-stat="forum-posts"]');
+    if (forumPostsEl) {
+      forumPostsEl.textContent = newCount;
+      animateNumber(forumPostsEl, newCount);
+    }
+
+    console.log('📝 Forum posts decremented to:', newCount);
+    return newCount;
+  } catch (error) {
+    console.error('Error decrementing forum posts:', error);
+    return 0;
+  }
+}
+
+
+// Function to get detailed quiz statistics
+function getDetailedQuizStats() {
+    try {
+        const quizHistory = getQuizHistory();
+        
+        if (quizHistory.length === 0) {
+            return {
+                totalCompleted: 0,
+                averageScore: 0,
+                bestScore: 0,
+                latestScore: 0,
+                improvement: 0
+            };
+        }
+        
+        const scores = quizHistory.map(quiz => quiz.overallScore || 0);
+        const totalCompleted = quizHistory.length;
+        const averageScore = Math.round(scores.reduce((sum, score) => sum + score, 0) / totalCompleted);
+        const bestScore = Math.max(...scores);
+        const latestScore = scores[0] || 0; // Latest is first (newest)
+        
+        // Calculate improvement (compare latest vs first attempt)
+        const firstScore = scores[scores.length - 1] || 0;
+        const improvement = totalCompleted > 1 ? latestScore - firstScore : 0;
+        
+        return {
+            totalCompleted,
+            averageScore,
+            bestScore,
+            latestScore,
+            improvement
+        };
+    } catch (error) {
+        console.error('Error getting detailed quiz stats:', error);
+        return {
+            totalCompleted: 0,
+            averageScore: 0,
+            bestScore: 0,
+            latestScore: 0,
+            improvement: 0
+        };
+    }
+}
+
+// Initialize statistics when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 User stats script initialized');
+    
+    // Update statistics after a short delay to ensure DOM is ready
+    setTimeout(updateUserStatistics, 500);
+});
+
+// Listen for quiz completion events (if dispatched from quiz page)
+window.addEventListener('quizCompleted', (event) => {
+    console.log('🎯 Quiz completed event received');
+    
+    // Update statistics after quiz completion
+    setTimeout(updateUserStatistics, 1000);
+});
+
+// Export functions for use in other scripts
+window.updateUserStatistics = updateUserStatistics;
+window.getDetailedQuizStats = getDetailedQuizStats;
+window.incrementForumPosts = incrementForumPosts;
+window.getQuizHistory = getQuizHistory;
+
+console.log('✅ User stats module loaded');
+
 
 // Create global instance
 const userStats = new UserStatsManager();

@@ -246,19 +246,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-8 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-orange-100 text-sm font-medium mb-2">Material Reads</p>
-                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalMaterialReads" data-global-stat="totalMaterialReads">0</p>
-                        <p class="text-orange-200 text-xs">Content Engagement</p>
-                    </div>
-                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                        <i class="fas fa-chart-bar text-2xl"></i>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Realtime Activity Feed -->
@@ -685,7 +672,6 @@
                 }, (error) => {
                     console.error('❌ Error listening to userStats:', error);
                     updateStat('totalUsers', 0);
-                    updateStat('totalMaterialReads', 0);
                 });
                 
                 // Listen to survey responses
@@ -1298,7 +1284,6 @@
             updateStat('totalUsers', 0);
             updateStat('totalMaterials', 0);
             updateStat('totalForumPosts', 0);
-            updateStat('totalMaterialReads', 0);
             
             // Then setup realtime listeners
             setupRealtimeListeners();
