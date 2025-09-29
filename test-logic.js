@@ -1,12 +1,5 @@
-// Keep these imports and chat logic
-let chatLogic = null;
-try {
-    import('./chat-logic.js').then(module => {
-        chatLogic = module;
-    });
-} catch (e) {
-    console.log('Chat logic not available in standalone mode');
-}
+// test-logic.js - Quiz logic only
+import { setupChatListeners, addMessageToChat } from './chat-logic.js';
 
 // === Data Soal & Kata Kunci ===
 const questions = {
@@ -97,13 +90,13 @@ const questions = {
 };
 
 const keywords = {
-    empati: [ "peduli","prihatin","empati","tolong","bantu","rasakan","perasaan", "pahami","simpati","perhatian","teman","bela","berbagi","menghibur","tenang", "senang","sedih","khawatir","canggung","terharu","menolong","kasihan","iba" ],
-    hatiNurani: [ "jujur","kejujuran","bertanggung","tanggung jawab","maaf","minta maaf","janji", "salah","benar","dosa","akui","memperbaiki","perbaikan","kesalahan", "malu","rasa bersalah","menyesal","integritas","adil","kebaikan","moral","etika" ],
-    pengendalianDiri: [ "sabar","kesabaran","tenang","napas","tarik napas","kontrol","kendali", "menahan diri","mengendalikan","tidak marah","tidak emosi","fokus","berhati-hati", "disiplin","teratur","tertib","aturlah","kontrol diri","diam","tidak terburu-buru","mengatur" ],
-    hormat: [ "hormat","menghormati","menghargai","tenggang rasa","sopan","santun", "permisi","tolong","maaf","sopan santun","etika","tatakrama","nilai", "adab","unggah-ungguh","dengar","mendengarkan","memperhatikan","tidak mengejek","tidak menghina","menghargai" ],
-    kebaikanHati: [ "baik","kebaikan","ramah","lembut","kasih sayang","welas asih","peduli", "empati","simpati","murah hati","dermawan","penolong","menolong","bantu", "menghibur","dukung","dukungan","pemaaf","pengertian","ikhlas","tulus","baik hati" ],
-    toleransi: [ "toleransi","menerima","penerimaan","menghargai","keterbukaan","berpikiran terbuka", "saling menghargai","kesetaraan","tidak diskriminasi","perbedaan","berbeda", "beragam","plural","ramah","tidak menghakimi","tidak stereotip","sabar","adil","solidaritas","saling menghormati","inklusif" ],
-    keadilan: [ "adil","keadilan","jujur","kejujuran","setara","kesetaraan","hak","hak-hak", "aturan","peraturan","sportif","sportivitas","gilir","bergiliran","berbagi", "kompromi","win-win","kesepakatan","mendengarkan","transparan","tidak pilih kasih","tidak curang","fair","objektif" ]
+    empati: ["peduli","prihatin","empati","tolong","bantu","rasakan","perasaan","pahami","simpati","perhatian","teman","bela","berbagi","menghibur","tenang","senang","sedih","khawatir","canggung","terharu","menolong","kasihan","iba"],
+    hatiNurani: ["jujur","kejujuran","bertanggung","tanggung jawab","maaf","minta maaf","janji","salah","benar","dosa","akui","memperbaiki","perbaikan","kesalahan","malu","rasa bersalah","menyesal","integritas","adil","kebaikan","moral","etika"],
+    pengendalianDiri: ["sabar","kesabaran","tenang","napas","tarik napas","kontrol","kendali","menahan diri","mengendalikan","tidak marah","tidak emosi","fokus","berhati-hati","disiplin","teratur","tertib","aturlah","kontrol diri","diam","tidak terburu-buru","mengatur"],
+    hormat: ["hormat","menghormati","menghargai","tenggang rasa","sopan","santun","permisi","tolong","maaf","sopan santun","etika","tatakrama","nilai","adab","unggah-ungguh","dengar","mendengarkan","memperhatikan","tidak mengejek","tidak menghina","menghargai"],
+    kebaikanHati: ["baik","kebaikan","ramah","lembut","kasih sayang","welas asih","peduli","empati","simpati","murah hati","dermawan","penolong","menolong","bantu","menghibur","dukung","dukungan","pemaaf","pengertian","ikhlas","tulus","baik hati"],
+    toleransi: ["toleransi","menerima","penerimaan","menghargai","keterbukaan","berpikiran terbuka","saling menghargai","kesetaraan","tidak diskriminasi","perbedaan","berbeda","beragam","plural","ramah","tidak menghakimi","tidak stereotip","sabar","adil","solidaritas","saling menghormati","inklusif"],
+    keadilan: ["adil","keadilan","jujur","kejujuran","setara","kesetaraan","hak","hak-hak","aturan","peraturan","sportif","sportivitas","gilir","bergiliran","berbagi","kompromi","win-win","kesepakatan","mendengarkan","transparan","tidak pilih kasih","tidak curang","fair","objektif"]
 };
 
 const aspectDisplayNames = {
@@ -116,40 +109,123 @@ const aspectDisplayNames = {
     keadilan: 'Keadilan',
 };
 
-// === State Tes ===
+// State variables
 let aspects = Object.keys(questions);
 let currentAspectIndex = 0;
 let currentQuestionIndex = 0;
 let currentQuestionNumber = 1;
+let currentMode = 'quiz';
 let answers = {};
 let scores = {};
 let totalQuestions = 70;
 let radarChartInstance = null;
-let quizHistory = JSON.parse(localStorage.getItem('quizHistory')) || [];
+let quizHistory = [];
 
-// === Initialize ===
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Test logic initializing...');
+    
+    // Load quiz history
+    quizHistory = getQuizHistory();
+    
+    // Initialize quiz
     initializeQuiz();
+    
+    // Setup event listeners
     setupQuizEventListeners();
+    setupModeToggle();
+    
+    // Setup chat listeners from chat-logic.js
+    setupChatListeners();
+    
+    console.log('✅ Test logic initialized');
 });
 
+// Storage functions
+function getQuizHistory() {
+    try {
+        const data = localStorage.getItem('quizHistory');
+        return data ? JSON.parse(data) : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveQuizHistory(history) {
+    try {
+        localStorage.setItem('quizHistory', JSON.stringify(history));
+    } catch {
+        console.warn('Could not save to localStorage');
+    }
+}
+
+// Setup mode toggle
+function setupModeToggle() {
+    const quizModeBtn = document.getElementById('quiz-mode-btn');
+    const chatModeBtn = document.getElementById('chat-mode-btn');
+    
+    if (quizModeBtn) {
+        quizModeBtn.addEventListener('click', () => switchMode('quiz'));
+    }
+    
+    if (chatModeBtn) {
+        chatModeBtn.addEventListener('click', () => switchMode('chat'));
+    }
+}
+
+// Switch mode between quiz and chat
+function switchMode(mode) {
+    currentMode = mode;
+    const body = document.body;
+    
+    body.classList.remove('quiz-mode', 'chat-mode');
+    body.classList.add(`${mode}-mode`);
+    
+    const headerStatus = document.getElementById('header-status');
+    if (headerStatus) {
+        headerStatus.textContent = mode === 'quiz' ? 'Mode Quiz' : 'Chat dengan AI';
+    }
+    
+    const quizBtn = document.getElementById('quiz-mode-btn');
+    const chatBtn = document.getElementById('chat-mode-btn');
+    
+    if (quizBtn && chatBtn) {
+        if (mode === 'quiz') {
+            quizBtn.classList.add('bg-white', 'text-indigo-600');
+            quizBtn.classList.remove('text-white', 'hover:bg-white/10');
+            chatBtn.classList.remove('bg-white', 'text-indigo-600');
+            chatBtn.classList.add('text-white', 'hover:bg-white/10');
+        } else {
+            chatBtn.classList.add('bg-white', 'text-indigo-600');
+            chatBtn.classList.remove('text-white', 'hover:bg-white/10');
+            quizBtn.classList.remove('bg-white', 'text-indigo-600');
+            quizBtn.classList.add('text-white', 'hover:bg-white/10');
+        }
+    }
+}
+
+// Initialize quiz
 function initializeQuiz() {
     currentAspectIndex = 0;
     currentQuestionIndex = 0;
     currentQuestionNumber = 1;
     answers = {};
     scores = {};
+    
     aspects.forEach(aspect => {
         answers[aspect] = [];
         scores[aspect] = [];
     });
+    
     showCurrentQuestion();
     updateProgressDisplay();
 }
 
+// Setup quiz event listeners
 function setupQuizEventListeners() {
     const answerInput = document.getElementById('answer-input');
     const submitBtn = document.getElementById('submit-answer-btn');
+    
     if (answerInput) {
         answerInput.addEventListener('input', updateCharCount);
         answerInput.addEventListener('keypress', (e) => {
@@ -159,9 +235,13 @@ function setupQuizEventListeners() {
             }
         });
     }
-    if (submitBtn) submitBtn.addEventListener('click', submitAnswer);
+    
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitAnswer);
+    }
 }
 
+// Show current question
 function showCurrentQuestion() {
     const aspect = aspects[currentAspectIndex];
     const question = questions[aspect][currentQuestionIndex];
@@ -185,6 +265,7 @@ function showCurrentQuestion() {
     updateProgressDisplay();
 }
 
+// Update progress display
 function updateProgressDisplay() {
     document.getElementById('progress-text').textContent = `Soal ${currentQuestionNumber} dari ${totalQuestions}`;
     const progress = (currentQuestionNumber / totalQuestions) * 100;
@@ -192,12 +273,14 @@ function updateProgressDisplay() {
     document.getElementById('progress-percentage').textContent = `${progress.toFixed(1)}%`;
 }
 
+// Update character count
 function updateCharCount() {
     const count = document.getElementById('answer-input').value.length;
     document.getElementById('char-count').textContent = count;
     document.getElementById('submit-answer-btn').disabled = count < 10;
 }
 
+// Submit answer
 function submitAnswer() {
     const answer = document.getElementById('answer-input').value.trim();
     if (answer.length < 10) return;
@@ -212,6 +295,7 @@ function submitAnswer() {
     moveToNextQuestion();
 }
 
+// Show feedback
 function showAnswerFeedback(score, aspect) {
     const feedbackMessages = {
         low: 'Jawaban Anda baik, coba berikan lebih banyak detail dan contoh.',
@@ -225,16 +309,24 @@ function showAnswerFeedback(score, aspect) {
     console.log(`${displayName} - Skor: ${score.toFixed(1)}/10 - ${feedbackMessages[category]}`);
 }
 
+// Score answer
 function scoreAnswer(answer, aspect) {
     const answerLower = answer.toLowerCase();
-    let count = 0;
+    let keywordCount = 0;
+
     keywords[aspect].forEach(key => {
-        if (answerLower.includes(key)) count++;
+        if (answerLower.includes(key)) keywordCount++;
     });
+
+    if (keywordCount === 0) return 0;
+
     const lengthBonus = Math.min(Math.floor(answer.length / 50), 3);
-    return Math.min((count * 1.5) + lengthBonus, 10);
+    const score = (keywordCount * 1.5) + lengthBonus;
+
+    return Math.min(score, 10);
 }
 
+// Move to next question
 function moveToNextQuestion() {
     if (currentQuestionNumber >= totalQuestions) {
         completeQuiz();
@@ -249,6 +341,7 @@ function moveToNextQuestion() {
     showCurrentQuestion();
 }
 
+// Move to previous question
 function moveToPreviousQuestion() {
     if (currentQuestionNumber <= 1) return;
     currentQuestionNumber--;
@@ -260,16 +353,17 @@ function moveToPreviousQuestion() {
     showCurrentQuestion();
 }
 
+// Complete quiz
 function completeQuiz() {
     const resultsData = calculateFinalResults();
     const historyEntry = { date: new Date().toISOString(), ...resultsData };
     quizHistory.unshift(historyEntry);
-    localStorage.setItem('quizHistory', JSON.stringify(quizHistory.slice(0, 10)));
+    quizHistory = quizHistory.slice(0, 10);
+    saveQuizHistory(quizHistory);
     displayResults(resultsData);
 }
 
-// === FUNGSI HASIL DAN RIWAYAT ===
-
+// Calculate final results
 function calculateFinalResults() {
     const aspectScoresData = [];
     aspects.forEach(aspect => {
@@ -289,6 +383,7 @@ function calculateFinalResults() {
     };
 }
 
+// Display results
 function displayResults(resultsData) {
     const { aspectScores, overallScore, overallCategory } = resultsData;
     document.getElementById('results-modal').classList.remove('hidden');
@@ -320,6 +415,7 @@ function displayResults(resultsData) {
     }, 150);
 }
 
+// Show quiz history
 function showQuizHistory() {
     document.getElementById('results-content').classList.add('hidden');
     document.getElementById('history-content').classList.remove('hidden');
@@ -343,6 +439,7 @@ function showQuizHistory() {
         }).join('');
 }
 
+// Show results tab
 function showResultsTab() {
     document.getElementById('history-content').classList.add('hidden');
     document.getElementById('results-content').classList.remove('hidden');
@@ -350,6 +447,7 @@ function showResultsTab() {
     document.getElementById('results-tab-btn').classList.add('border-indigo-500', 'text-indigo-600');
 }
 
+// Helper functions for scoring
 function getScoreCategory(score) {
     if (score <= 40) return "Kurang";
     if (score <= 60) return "Cukup";
@@ -358,19 +456,59 @@ function getScoreCategory(score) {
 }
 
 function getCategoryColor(category) {
-    const colors = { "Kurang": "text-red-600", "Cukup": "text-yellow-600", "Baik": "text-blue-600", "Sangat Baik": "text-green-600" };
+    const colors = { 
+        "Kurang": "text-red-600", 
+        "Cukup": "text-yellow-600", 
+        "Baik": "text-blue-600", 
+        "Sangat Baik": "text-green-600" 
+    };
     return colors[category] || "text-gray-600";
 }
 
 function getAspectInterpretation(aspect, score) {
     const interpretations = {
-        empati: { Kurang: "Perlu lebih peka dalam mengenali dan merespons perasaan orang di sekitar Anda.", Cukup: "Sudah mulai bisa memahami perasaan orang lain, tingkatkan inisiatif untuk membantu.", Baik: "Cukup baik dalam berempati. Terus asah kepekaan pada isyarat non-verbal.", "Sangat Baik": "Sangat baik dalam memahami dan merasakan apa yang orang lain rasakan." },
-        hatiNurani: { Kurang: "Perlu penguatan pada prinsip kejujuran dan tanggung jawab atas tindakan.", Cukup: "Mulai menunjukkan integritas, namun perlu lebih konsisten dalam menepati janji.", Baik: "Memiliki hati nurani yang baik. Pertahankan untuk selalu bertindak benar.", "Sangat Baik": "Sangat menjunjung tinggi kejujuran dan berani bertanggung jawab." },
-        pengendalianDiri: { Kurang: "Cenderung impulsif. Latih kesabaran dan berpikir sebelum bertindak.", Cukup: "Sudah bisa menahan diri dalam beberapa situasi, namun mudah terpancing emosi.", Baik: "Mampu mengelola emosi dan dorongan dengan cukup baik.", "Sangat Baik": "Sangat baik dalam mengendalikan diri, bahkan di bawah tekanan." },
-        hormat: { Kurang: "Perlu belajar cara menghargai orang lain melalui tutur kata dan perbuatan.", Cukup: "Kadang masih kurang sopan. Biasakan menggunakan kata 'tolong', 'maaf', 'terima kasih'.", Baik: "Menunjukkan sikap hormat yang baik kepada orang lain.", "Sangat Baik": "Sangat santun dan mampu menghargai perbedaan pendapat." },
-        kebaikanHati: { Kurang: "Tingkatkan keinginan untuk menolong orang lain tanpa mengharap imbalan.", Cukup: "Sudah mau membantu jika diminta, coba untuk lebih proaktif menawarkan bantuan.", Baik: "Memiliki sifat penolong dan baik hati. Terus sebarkan energi positif.", "Sangat Baik": "Sangat murah hati dan tulus dalam membantu sesama." },
-        toleransi: { Kurang: "Cenderung sulit menerima perbedaan. Buka diri untuk belajar dari orang lain.", Cukup: "Masih sering menilai orang dari latar belakangnya. Fokus pada kesamaan.", Baik: "Mampu menghargai dan menerima perbedaan dengan baik.", "Sangat Baik": "Sangat terbuka dan menghormati keberagaman dalam masyarakat." },
-        keadilan: { Kurang: "Seringkali tidak sabar dan ingin menang sendiri. Belajar untuk adil dan sportif.", Cukup: "Sudah mau berbagi, namun perlu belajar berkompromi untuk kebaikan bersama.", Baik: "Memiliki prinsip keadilan yang baik dan tidak memihak.", "Sangat Baik": "Sangat adil, sportif, dan selalu mempertimbangkan hak orang lain." }
+        empati: { 
+            Kurang: "Perlu lebih peka dalam mengenali dan merespons perasaan orang di sekitar Anda.", 
+            Cukup: "Sudah mulai bisa memahami perasaan orang lain, tingkatkan inisiatif untuk membantu.", 
+            Baik: "Cukup baik dalam berempati. Terus asah kepekaan pada isyarat non-verbal.", 
+            "Sangat Baik": "Sangat baik dalam memahami dan merasakan apa yang orang lain rasakan." 
+        },
+        hatiNurani: { 
+            Kurang: "Perlu penguatan pada prinsip kejujuran dan tanggung jawab atas tindakan.", 
+            Cukup: "Mulai menunjukkan integritas, namun perlu lebih konsisten dalam menepati janji.", 
+            Baik: "Memiliki hati nurani yang baik. Pertahankan untuk selalu bertindak benar.", 
+            "Sangat Baik": "Sangat menjunjung tinggi kejujuran dan berani bertanggung jawab." 
+        },
+        pengendalianDiri: { 
+            Kurang: "Cenderung impulsif. Latih kesabaran dan berpikir sebelum bertindak.", 
+            Cukup: "Sudah bisa menahan diri dalam beberapa situasi, namun mudah terpancing emosi.", 
+            Baik: "Mampu mengelola emosi dan dorongan dengan cukup baik.", 
+            "Sangat Baik": "Sangat baik dalam mengendalikan diri, bahkan di bawah tekanan." 
+        },
+        hormat: { 
+            Kurang: "Perlu belajar cara menghargai orang lain melalui tutur kata dan perbuatan.", 
+            Cukup: "Kadang masih kurang sopan. Biasakan menggunakan kata 'tolong', 'maaf', 'terima kasih'.", 
+            Baik: "Menunjukkan sikap hormat yang baik kepada orang lain.", 
+            "Sangat Baik": "Sangat santun dan mampu menghargai perbedaan pendapat." 
+        },
+        kebaikanHati: { 
+            Kurang: "Tingkatkan keinginan untuk menolong orang lain tanpa mengharap imbalan.", 
+            Cukup: "Sudah mau membantu jika diminta, coba untuk lebih proaktif menawarkan bantuan.", 
+            Baik: "Memiliki sifat penolong dan baik hati. Terus sebarkan energi positif.", 
+            "Sangat Baik": "Sangat murah hati dan tulus dalam membantu sesama." 
+        },
+        toleransi: { 
+            Kurang: "Cenderung sulit menerima perbedaan. Buka diri untuk belajar dari orang lain.", 
+            Cukup: "Masih sering menilai orang dari latar belakangnya. Fokus pada kesamaan.", 
+            Baik: "Mampu menghargai dan menerima perbedaan dengan baik.", 
+            "Sangat Baik": "Sangat terbuka dan menghormati keberagaman dalam masyarakat." 
+        },
+        keadilan: { 
+            Kurang: "Seringkali tidak sabar dan ingin menang sendiri. Belajar untuk adil dan sportif.", 
+            Cukup: "Sudah mau berbagi, namun perlu belajar berkompromi untuk kebaikan bersama.", 
+            Baik: "Memiliki prinsip keadilan yang baik dan tidak memihak.", 
+            "Sangat Baik": "Sangat adil, sportif, dan selalu mempertimbangkan hak orang lain." 
+        }
     };
     return interpretations[aspect][getScoreCategory(score)] || "Terus kembangkan aspek ini.";
 }
@@ -386,6 +524,7 @@ function getFinalInterpretation(aspectScores) {
     return `${mainProfile}Kekuatan utama Anda ada pada aspek ${strengths.join(' dan ')}. Aspek yang perlu menjadi fokus pengembangan adalah ${aspectDisplayNames[weakness.aspect] || capitalize(weakness.aspect)}.`;
 }
 
+// Draw results chart
 function drawResultsChart(labels, data) {
     const canvas = document.getElementById('results-chart');
     if (!canvas) return;
@@ -395,22 +534,34 @@ function drawResultsChart(labels, data) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Skor (%)', data: data, fill: true,
+                label: 'Skor (%)', 
+                data: data, 
+                fill: true,
                 backgroundColor: 'rgba(99, 102, 241, 0.2)',
                 borderColor: 'rgb(99, 102, 241)',
                 pointBackgroundColor: 'rgb(99, 102, 241)',
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { r: { beginAtZero: true, max: 100, pointLabels: { font: { size: 12 } } } },
-            plugins: { legend: { display: false } }
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: { 
+                r: { 
+                    beginAtZero: true, 
+                    max: 100, 
+                    pointLabels: { 
+                        font: { size: 12 } 
+                    } 
+                } 
+            },
+            plugins: { 
+                legend: { display: false } 
+            }
         }
     });
 }
 
-// === FUNGSI EKSPOR PDF ===
-
+// Export to PDF
 async function exportToPDF() {
     const participantName = prompt("Silakan masukkan nama Anda untuk laporan:", "Peserta Tes");
     if (!participantName) {
@@ -424,28 +575,22 @@ async function exportToPDF() {
     exportBtn.textContent = 'Membuat PDF...';
 
     try {
-        // Import jsPDF from CDN
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
         const results = calculateFinalResults();
         const { aspectScores, overallScore, overallCategory } = results;
         
-        // Set font
         doc.setFont("helvetica");
-        
-        // Header
         doc.setFontSize(20);
-        doc.setTextColor(79, 70, 229); // Indigo color
+        doc.setTextColor(79, 70, 229);
         doc.text('Laporan Hasil Tes Moral Intelligence', 105, 20, { align: 'center' });
         
-        // Participant info
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
         doc.text(`Nama: ${participantName}`, 20, 40);
         doc.text(`Tanggal Tes: ${new Date().toLocaleDateString('id-ID')}`, 20, 50);
         
-        // Overall score section
         doc.setFontSize(16);
         doc.setTextColor(79, 70, 229);
         doc.text('Skor Keseluruhan', 20, 70);
@@ -455,13 +600,11 @@ async function exportToPDF() {
         doc.text(`Skor: ${overallScore.toFixed(0)}/100`, 20, 85);
         doc.text(`Kategori: ${overallCategory}`, 20, 95);
         
-        // Interpretation
         doc.setFontSize(12);
         const interpretation = getFinalInterpretation(aspectScores);
         const splitInterpretation = doc.splitTextToSize(interpretation, 170);
         doc.text(splitInterpretation, 20, 110);
         
-        // Detailed scores
         doc.setFontSize(16);
         doc.setTextColor(79, 70, 229);
         doc.text('Rincian Skor per Aspek', 20, 140);
@@ -470,8 +613,8 @@ async function exportToPDF() {
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         
-        aspectScores.forEach((data, index) => {
-            if (yPosition > 250) { // New page if needed
+        aspectScores.forEach((data) => {
+            if (yPosition > 250) {
                 doc.addPage();
                 yPosition = 20;
             }
@@ -480,11 +623,9 @@ async function exportToPDF() {
             const category = getScoreCategory(data.score);
             const aspectInterpretation = getAspectInterpretation(data.aspect, data.score);
             
-            // Aspect name and score
             doc.setFont("helvetica", "bold");
             doc.text(`${displayName}: ${data.score.toFixed(0)}/100 (${category})`, 20, yPosition);
             
-            // Interpretation
             doc.setFont("helvetica", "normal");
             const splitAspectInterpretation = doc.splitTextToSize(aspectInterpretation, 170);
             doc.text(splitAspectInterpretation, 20, yPosition + 8);
@@ -492,26 +633,20 @@ async function exportToPDF() {
             yPosition += 25;
         });
         
-        // Add chart if possible (convert canvas to image)
         try {
             const canvas = document.getElementById('results-chart');
             if (canvas && radarChartInstance) {
                 const chartImage = canvas.toDataURL('image/png');
-                
-                // Add new page for chart
                 doc.addPage();
                 doc.setFontSize(16);
                 doc.setTextColor(79, 70, 229);
                 doc.text('Grafik Radar Skor', 105, 20, { align: 'center' });
-                
-                // Add chart image
                 doc.addImage(chartImage, 'PNG', 30, 30, 150, 150);
             }
         } catch (chartError) {
             console.warn('Could not add chart to PDF:', chartError);
         }
         
-        // Footer
         const pageCount = doc.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -521,7 +656,6 @@ async function exportToPDF() {
                     105, 290, { align: 'center' });
         }
         
-        // Save the PDF
         const fileName = `Hasil_Tes_Moral_Intelligence_${participantName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
         doc.save(fileName);
         
@@ -534,6 +668,7 @@ async function exportToPDF() {
     }
 }
 
+// UI control functions
 function closeResults() {
     document.getElementById('results-modal').classList.add('hidden');
 }
@@ -542,111 +677,62 @@ function restartQuiz() {
     if (confirm('Apakah Anda yakin ingin mengulang quiz? Progres saat ini akan hilang.')) {
         closeResults();
         initializeQuiz();
-        if (typeof switchMode === 'function') switchMode('quiz');
+        switchMode('quiz');
     }
 }
 
 function discussResults() {
     closeResults();
-    if (typeof switchMode !== 'function' || typeof addMessageToChat !== 'function') return;
-    
     switchMode('chat');
+    
     setTimeout(() => {
-        addMessageToChat('Bantu saya menganalisis hasil quiz ini.', 'user');
-        addMessageToChat(generateResultsSummaryForAI(), 'ai');
+        const message = "Saya baru saja menyelesaikan quiz moral intelligence. Bisakah kamu membantu saya memahami hasil saya dan memberikan saran untuk pengembangan?";
+        if (window.handleChatInteraction) {
+            window.handleChatInteraction(message);
+        }
     }, 300);
 }
 
-function generateResultsSummaryForAI() {
-    const { aspectScores } = calculateFinalResults();
-    let message = "🎯 **Ringkasan hasil quiz Anda:**\n\n";
-    aspectScores.forEach(data => {
-        const displayName = aspectDisplayNames[data.aspect] || capitalize(data.aspect);
-        message += `**${displayName}:** ${data.score.toFixed(0)}/100 (${getScoreCategory(data.score)})\n`;
-    });
-    message += `\n**Interpretasi Keseluruhan:**\n${getFinalInterpretation(aspectScores)}\n\n`;
-    message += "Apakah ada aspek tertentu yang ingin Anda diskusikan lebih dalam?";
-    return message;
-}
-
-// Fungsi ini dipanggil saat tombol "Tanya AI tentang pertanyaan ini" diklik
-function quickAskAI() {
-    // Periksa apakah fungsi dari chat-logic.js tersedia
-    if (typeof window.switchMode !== 'function' || typeof window.handleChatInteraction !== 'function') {
-        alert("Fitur chat tidak dapat dimuat.");
-        return;
-    }
-    
-    // Pindah ke mode chat
-    window.switchMode('chat');
-    
-    // Siapkan pesan dan kirim ke AI
-    const currentQ = getCurrentQuestion();
-    if (currentQ) {
-        const message = `Tolong bantu saya memahami dan berikan panduan untuk menjawab pertanyaan ini:\n\n"${currentQ.question}"`;
-        // Beri jeda sedikit agar transisi UI selesai sebelum mengirim pesan
+// Global helper for chat integration
+window.quickAskAI = function() {
+    switchMode('chat');
+    const currentQuestion = document.getElementById('question-text');
+    if (currentQuestion) {
         setTimeout(() => {
-            window.handleChatInteraction(message);
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.value = `Tolong bantu saya menjawab pertanyaan ini: "${currentQuestion.textContent}"`;
+                chatInput.focus();
+            }
         }, 100);
     }
-}
+};
 
-// Fungsi ini dipanggil saat tombol "Penjelasan aspek" diklik
-function explainCurrentAspect() {
-    if (typeof window.switchMode !== 'function' || typeof window.handleChatInteraction !== 'function') {
-        alert("Fitur chat tidak dapat dimuat.");
-        return;
-    }
-
-    // Pindah ke mode chat
-    window.switchMode('chat');
-
-    // Siapkan pesan dan kirim ke AI
-    const currentAspectName = aspectDisplayNames[aspects[currentAspectIndex]] || capitalize(aspects[currentAspectIndex]);
-    if (currentAspectName) {
-        const message = `Tolong jelaskan aspek "${currentAspectName}" dalam moral intelligence dan berikan contohnya.`;
+window.explainCurrentAspect = function() {
+    switchMode('chat');
+    const aspectName = document.getElementById('current-aspect-display');
+    if (aspectName) {
         setTimeout(() => {
-            window.handleChatInteraction(message);
+            const message = `Tolong jelaskan tentang aspek "${aspectName.textContent}" dalam moral intelligence.`;
+            if (window.handleChatInteraction) {
+                window.handleChatInteraction(message);
+            }
         }, 100);
     }
-}
-
-// Helper function untuk mendapatkan info soal saat ini
-function getCurrentQuestion() {
-    if (currentAspectIndex >= aspects.length) return null;
-    const aspect = aspects[currentAspectIndex];
-    return {
-        aspect: aspect,
-        question: questions[aspect][currentQuestionIndex],
-    };
-}
-
-function generateAspectExplanation() {
-    const aspectKey = aspects[currentAspectIndex];
-    const aspectName = aspectDisplayNames[aspectKey] || capitalize(aspectKey);
-    const explanations = {
-        empati: `**${aspectName}** adalah kemampuan untuk memahami dan merasakan perasaan orang lain dari sudut pandang mereka. Contohnya adalah menghibur teman yang sedang sedih.`,
-        hatiNurani: `**${aspectName}** adalah panduan internal tentang benar dan salah. Contohnya adalah merasa bersalah dan meminta maaf setelah melakukan kesalahan.`,
-        pengendalianDiri: `**${aspectName}** adalah kemampuan untuk mengontrol emosi dan tindakan. Contohnya adalah tetap tenang saat marah dan tidak bertindak gegabah.`,
-        hormat: `**${aspectName}** adalah sikap menghargai diri sendiri, orang lain, dan lingkungan sekitar. Contohnya adalah mendengarkan pendapat orang lain tanpa menyela.`,
-        kebaikanHati: `**${aspectName}** adalah kecenderungan untuk berbuat baik dan menolong sesama tanpa pamrih. Contohnya adalah membantu seseorang yang kesulitan secara sukarela.`,
-        toleransi: `**${aspectName}** adalah kemampuan untuk menerima dan menghargai perbedaan pendapat, keyakinan, dan budaya. Contohnya adalah berteman baik dengan orang yang berbeda latar belakang.`,
-        keadilan: `**${aspectName}** adalah prinsip untuk memperlakukan semua orang secara setara dan tidak memihak. Contohnya adalah membagi sesuatu secara adil saat bekerja dalam kelompok.`
-    };
-    return explanations[aspectKey] || `**${aspectName}** adalah salah satu dari 7 aspek penting dalam kecerdasan moral.`;
-}
+};
 
 function capitalize(str) {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// === Global Functions ===
+// Export global functions
 window.closeResults = closeResults;
 window.discussResults = discussResults;
-window.exportToWord = exportToWord;
+window.exportToPDF = exportToPDF;
 window.restartQuiz = restartQuiz;
 window.showResultsTab = showResultsTab;
 window.showQuizHistory = showQuizHistory;
-window.quickAskAI = quickAskAI;
-window.explainCurrentAspect = explainCurrentAspect;
+window.switchMode = switchMode;
+
+console.log('✅ Test logic module loaded');

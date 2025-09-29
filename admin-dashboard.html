@@ -280,6 +280,30 @@
             </div>
         </div>
 
+        <!-- Survey Responses Viewer -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mr-4">
+                        <i class="fas fa-clipboard-list text-white text-xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                        Survey Responses
+                    </h2>
+                </div>
+                <button onclick="exportSurveys()" class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all">
+                    <i class="fas fa-download mr-2"></i>Export CSV
+                </button>
+            </div>
+            
+            <div id="survey-responses-list" class="space-y-4">
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                    <p>Memuat survey responses...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Enhanced User Activity Stats -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- Top Forum Contributors -->
@@ -606,6 +630,8 @@
         import { db } from './firebase-init.js';
         import { collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
+        console.log('🚀 Admin Dashboard Loading...');
+        
         // Initialize DOM elements
         const fileInput = document.getElementById('file-upload');
         const uploadBtn = document.getElementById('upload-btn');
@@ -614,56 +640,334 @@
         const progressBar = document.getElementById('progress-bar');
         const progressText = document.getElementById('progress-text');
         
-        // Initialize realtime listeners with User Stats
+        // Initialize realtime listeners with User Stats - FIXED VERSION
         function setupRealtimeListeners() {
-            // Listen to forum posts
-            const postsRef = collection(db, 'posts');
-            onSnapshot(postsRef, (snapshot) => {
-                const totalPosts = snapshot.size;
-                updateStat('totalForumPosts', totalPosts);
-                
-                // Add to activity feed
-                addToActivityFeed(`Forum posts: ${totalPosts}`, 'info');
-            });
+            console.log('Setting up real-time listeners...');
             
-            // Listen to user stats
-            const userStatsRef = collection(db, 'userStats');
-            onSnapshot(userStatsRef, (snapshot) => {
-                let totalUsers = 0;
-                let totalMaterialReads = 0;
-                let totalMaterialCompletions = 0;
-                let totalActiveDays = 0;
-                
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    totalUsers++;
-                    totalMaterialReads += data.materialsRead || 0;
-                    totalMaterialCompletions += data.materialsCompleted || 0;
-                    totalActiveDays += data.activeDays || 0;
+            try {
+                // Listen to forum posts
+                const postsRef = collection(db, 'posts');
+                onSnapshot(postsRef, (snapshot) => {
+                    const totalPosts = snapshot.size;
+                    updateStat('totalForumPosts', totalPosts);
+                    addToActivityFeed(`Forum posts: ${totalPosts}`, 'info');
+                    console.log('✅ Forum Posts:', totalPosts);
+                }, (error) => {
+                    console.error('❌ Error listening to posts:', error);
+                    updateStat('totalForumPosts', 0);
                 });
                 
-                updateStat('totalUsers', totalUsers);
-                updateStat('totalMaterialReads', totalMaterialReads);
-                updateStat('materials-started', totalMaterialReads);
-                updateStat('materials-completed', totalMaterialCompletions);
+                // Listen to user stats
+                const userStatsRef = collection(db, 'userStats');
+                onSnapshot(userStatsRef, (snapshot) => {
+                    let totalUsers = 0;
+                    let totalMaterialReads = 0;
+                    let totalMaterialCompletions = 0;
+                    
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        totalUsers++;
+                        totalMaterialReads += data.materialsRead || 0;
+                        totalMaterialCompletions += data.materialsCompleted || 0;
+                    });
+                    
+                    updateStat('totalUsers', totalUsers);
+                    updateStat('totalMaterialReads', totalMaterialReads);
+                    updateStat('materials-started', totalMaterialReads);
+                    updateStat('materials-completed', totalMaterialCompletions);
+                    
+                    // Update completion rate
+                    const completionRate = totalMaterialReads > 0 ? Math.round((totalMaterialCompletions / totalMaterialReads) * 100) : 0;
+                    updateCompletionRate(completionRate);
+                    
+                    addToActivityFeed(`Active users: ${totalUsers} | Materials read: ${totalMaterialReads}`, 'success');
+                    console.log('✅ Users:', totalUsers, '| Material Reads:', totalMaterialReads);
+                }, (error) => {
+                    console.error('❌ Error listening to userStats:', error);
+                    updateStat('totalUsers', 0);
+                    updateStat('totalMaterialReads', 0);
+                });
                 
-                // Update completion rate
-                const completionRate = totalMaterialReads > 0 ? Math.round((totalMaterialCompletions / totalMaterialReads) * 100) : 0;
-                updateCompletionRate(completionRate);
+                // Listen to survey responses
+                const surveyRef = collection(db, 'surveyResponses');
+                onSnapshot(surveyRef, (snapshot) => {
+                    const totalResponses = snapshot.size;
+                    console.log('✅ Survey Responses:', totalResponses);
+                    displaySurveyResponses(snapshot);
+                }, (error) => {
+                    console.error('❌ Error listening to survey responses:', error);
+                    displaySurveyResponsesEmpty();
+                });
                 
-                // Add to activity feed
-                addToActivityFeed(`Active users: ${totalUsers} | Materials read: ${totalMaterialReads}`, 'success');
-            });
+            } catch (error) {
+                console.error('❌ Error setting up listeners:', error);
+            }
         }
+        
+        // Display survey responses
+        function displaySurveyResponses(snapshot) {
+            const container = document.getElementById('survey-responses-list');
+            if (!container) return;
+
+            if (snapshot.empty) {
+                displaySurveyResponsesEmpty();
+                return;
+            }
+
+            const responses = [];
+            snapshot.forEach(doc => {
+                responses.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort by timestamp (newest first)
+            responses.sort((a, b) => {
+                const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                return timeB - timeA;
+            });
+
+            container.innerHTML = responses.map(response => {
+                const avgRating = calculateAverageRating(response.ratings);
+                return `
+                    <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-800">${response.userName || 'Anonymous'}</h4>
+                                <p class="text-sm text-gray-500">${response.userEmail || 'No email'}</p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    ${response.timestamp ? new Date(response.timestamp).toLocaleString('id-ID') : 'No date'}
+                                </p>
+                            </div>
+                            <button onclick="viewSurveyDetail('${response.id}')" 
+                                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                <i class="fas fa-eye mr-2"></i>Detail
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                <p class="text-xs text-blue-600 font-medium">Perangkat</p>
+                                <p class="text-sm font-bold text-blue-800">${response.device || 'N/A'}</p>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-lg">
+                                <p class="text-xs text-green-600 font-medium">Frekuensi</p>
+                                <p class="text-sm font-bold text-green-800">${response.frequency || 'N/A'}</p>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded-lg">
+                                <p class="text-xs text-purple-600 font-medium">Fitur Favorit</p>
+                                <p class="text-sm font-bold text-purple-800">${response.mostUsedFeature || 'N/A'}</p>
+                            </div>
+                            <div class="bg-orange-50 p-3 rounded-lg">
+                                <p class="text-xs text-orange-600 font-medium">Tujuan</p>
+                                <p class="text-sm font-bold text-orange-800">${response.purpose || 'N/A'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs text-gray-600 font-medium mb-2">Rating Rata-rata</p>
+                            <div class="flex items-center">
+                                <span class="text-2xl font-bold text-yellow-600">${avgRating}</span>
+                                <span class="text-sm text-gray-500 ml-2">/ 5.0</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function displaySurveyResponsesEmpty() {
+            const container = document.getElementById('survey-responses-list');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                    <p>Belum ada survey response</p>
+                </div>
+            `;
+        }
+        
+        function calculateAverageRating(ratings) {
+            if (!ratings || typeof ratings !== 'object') return 'N/A';
+            const values = Object.values(ratings).filter(v => typeof v === 'number');
+            if (values.length === 0) return 'N/A';
+            const sum = values.reduce((a, b) => a + b, 0);
+            return (sum / values.length).toFixed(1);
+        }
+        
+        // View survey detail
+        window.viewSurveyDetail = async function(surveyId) {
+            try {
+                const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const docRef = doc(db, 'surveyResponses', surveyId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    showSurveyModal(data);
+                } else {
+                    alert('Survey tidak ditemukan');
+                }
+            } catch (error) {
+                console.error('Error fetching survey detail:', error);
+                alert('Gagal memuat detail survey');
+            }
+        };
+        
+        // Show survey modal
+        function showSurveyModal(data) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+            
+            const ratingsHTML = data.ratings ? Object.entries(data.ratings).map(([key, value]) => {
+                const label = formatRatingKey(key);
+                return `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-2">${label}</p>
+                        <div class="flex items-center">
+                            <div class="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-full" 
+                                     style="width: ${(value/5)*100}%"></div>
+                            </div>
+                            <span class="ml-3 font-bold text-yellow-600">${value}/5</span>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<p class="text-gray-500">No ratings available</p>';
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">${data.userName || 'Anonymous'}</h2>
+                            <p class="text-gray-600">${data.userEmail || 'No email'}</p>
+                            <p class="text-sm text-gray-500 mt-1">
+                                ${data.timestamp ? new Date(data.timestamp).toLocaleString('id-ID') : 'No date'}
+                            </p>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <i class="fas fa-times text-xl text-gray-600"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Detail Penilaian</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${ratingsHTML}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Informasi Penggunaan</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <p class="text-sm text-blue-600 mb-1">Perangkat</p>
+                                    <p class="font-bold text-blue-800">${data.device || 'N/A'}</p>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <p class="text-sm text-green-600 mb-1">Frekuensi</p>
+                                    <p class="font-bold text-green-800">${data.frequency || 'N/A'}</p>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <p class="text-sm text-purple-600 mb-1">Fitur Favorit</p>
+                                    <p class="font-bold text-purple-800">${data.mostUsedFeature || 'N/A'}</p>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <p class="text-sm text-orange-600 mb-1">Tujuan</p>
+                                    <p class="font-bold text-orange-800">${data.purpose || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${data.additionalFeedback ? `
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800 mb-4">Saran & Masukan</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <p class="text-gray-700">${data.additionalFeedback}</p>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function formatRatingKey(key) {
+            const labels = {
+                textReadability: 'Teks Mudah Dibaca',
+                colorLayout: 'Warna dan Tata Letak',
+                attractiveDesign: 'Desain Menarik',
+                crossPlatform: 'Lintas Platform',
+                easeOfUse: 'Kemudahan Penggunaan',
+                chatbotRelevance: 'Relevansi Chatbot',
+                mediaSupport: 'Media Pendukung',
+                materialClarity: 'Kejelasan Materi',
+                questionVariety: 'Variasi Soal',
+                learningSupport: 'Dukungan Pembelajaran'
+            };
+            return labels[key] || key;
+        }
+        
+        // Export surveys function
+        window.exportSurveys = async function() {
+            try {
+                const surveyRef = collection(db, 'surveyResponses');
+                const snapshot = await getDocs(surveyRef);
+                
+                if (snapshot.empty) {
+                    showNotification('Tidak ada data survey untuk diekspor', 'error');
+                    return;
+                }
+
+                let csv = 'Timestamp,User,Email,Device,Frequency,Feature,Purpose,Avg Rating,Feedback\n';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const avgRating = calculateAverageRating(data.ratings);
+                    csv += `"${data.timestamp || ''}","${data.userName || ''}","${data.userEmail || ''}","${data.device || ''}","${data.frequency || ''}","${data.mostUsedFeature || ''}","${data.purpose || ''}","${avgRating}","${(data.additionalFeedback || '').replace(/"/g, '""')}"\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `survey-responses-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification('Survey berhasil diekspor', 'success');
+                addToActivityFeed('Admin exported survey responses', 'info');
+            } catch (error) {
+                console.error('Error exporting surveys:', error);
+                showNotification('Gagal mengekspor survey', 'error');
+            }
+        };
         
         function updateStat(statId, value) {
             const elements = document.querySelectorAll(`#${statId}, [data-global-stat="${statId}"]`);
+            
+            if (elements.length === 0) {
+                console.warn(`⚠️ No elements found for stat: ${statId}`);
+                return;
+            }
+            
             elements.forEach(el => {
                 el.textContent = value;
-                el.classList.add('stat-pulse');
-                setTimeout(() => {
-                    el.classList.remove('stat-pulse');
-                }, 2000);
+                
+                // Add pulse animation only for numeric values
+                if (typeof value === 'number' && value > 0) {
+                    el.classList.add('stat-pulse');
+                    setTimeout(() => {
+                        el.classList.remove('stat-pulse');
+                    }, 2000);
+                }
             });
         }
         
@@ -677,6 +981,8 @@
         
         function addToActivityFeed(message, type = 'info') {
             const feed = document.getElementById('realtime-activity-feed');
+            if (!feed) return;
+            
             const timestamp = new Date().toLocaleTimeString('id-ID');
             
             const typeColors = {
@@ -707,16 +1013,18 @@
         }
         
         // File input change handler
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                const fileName = e.target.files[0].name;
-                fileNameSpan.innerHTML = `<i class="fas fa-file-alt text-blue-500 mr-2"></i>${fileName}`;
-                fileNameSpan.className = "text-blue-600 font-semibold";
-            } else {
-                fileNameSpan.textContent = 'Belum ada file yang dipilih';
-                fileNameSpan.className = "text-gray-600 font-medium";
-            }
-        });
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    const fileName = e.target.files[0].name;
+                    fileNameSpan.innerHTML = `<i class="fas fa-file-alt text-blue-500 mr-2"></i>${fileName}`;
+                    fileNameSpan.className = "text-blue-600 font-semibold";
+                } else {
+                    fileNameSpan.textContent = 'Belum ada file yang dipilih';
+                    fileNameSpan.className = "text-gray-600 font-medium";
+                }
+            });
+        }
 
         // Helper functions
         function formatFileSize(bytes) {
@@ -730,6 +1038,8 @@
         // Enhanced material list loading function
         async function loadMateriList() {
             const materiList = document.getElementById('materi-list');
+            if (!materiList) return;
+            
             materiList.innerHTML = `
                 <div class="flex items-center justify-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -745,10 +1055,12 @@
 
                 if (error) throw error;
 
-                // Update total materials count
-                updateStat('totalMaterials', files.length);
+                // Filter and update total materials count
+                const actualFiles = files ? files.filter(f => f.name !== '.emptyFolderPlaceholder') : [];
+                updateStat('totalMaterials', actualFiles.length);
+                console.log('✅ Total Materials:', actualFiles.length);
 
-                if (!files || files.length === 0) {
+                if (!actualFiles || actualFiles.length === 0) {
                     materiList.innerHTML = `
                         <div class="text-center py-12">
                             <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
@@ -761,9 +1073,7 @@
 
                 materiList.innerHTML = '';
 
-                for (const file of files) {
-                    if (file.name === '.emptyFolderPlaceholder') continue;
-
+                for (const file of actualFiles) {
                     const { data: { publicUrl } } = supabase
                         .storage
                         .from('Mobile-Intelligence')
@@ -786,7 +1096,7 @@
                                         </span>
                                         <span class="flex items-center whitespace-nowrap">
                                             <i class="fas fa-calendar mr-1"></i>
-                                            ${new Date(file.metadata?.lastModified).toLocaleDateString()}
+                                            ${new Date(file.metadata?.lastModified).toLocaleDateString('id-ID')}
                                         </span>
                                     </div>
                                 </div>
@@ -807,7 +1117,7 @@
                     materiList.appendChild(div);
                 }
             } catch (error) {
-                console.error('Gagal memuat daftar materi:', error);
+                console.error('❌ Gagal memuat daftar materi:', error);
                 materiList.innerHTML = `
                     <div class="text-center py-12">
                         <i class="fas fa-exclamation-triangle text-6xl text-red-300 mb-4"></i>
@@ -842,54 +1152,56 @@
         }
 
         // Enhanced upload button click handler
-        uploadBtn.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                showNotification('Silakan pilih file terlebih dahulu', 'error');
-                return;
-            }
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', async () => {
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    showNotification('Silakan pilih file terlebih dahulu', 'error');
+                    return;
+                }
 
-            try {
-                uploadBtn.disabled = true;
-                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Sedang Mengunggah...';
-                uploadProgress.classList.remove('hidden');
-                
-                const fileName = file.name; 
-                
-                const { data, error } = await supabase.storage
-                    .from('Mobile-Intelligence')
-                    .upload(`materi/${fileName}`, file, {
-                        cacheControl: '3600',
-                        upsert: false,
-                        onProgress: (progress) => {
-                            const percent = Math.round((progress.loaded / progress.total) * 100);
-                            progressBar.style.width = `${percent}%`;
-                            progressText.textContent = `Mengunggah: ${percent}%`;
-                        }
-                    });
-                
-                if (error) throw error;
-                
-                fileInput.value = '';
-                fileNameSpan.textContent = 'Belum ada file yang dipilih';
-                fileNameSpan.className = "text-gray-600 font-medium";
-                
-                showNotification('File berhasil diunggah!', 'success');
-                loadMateriList();
-                addToActivityFeed(`New material uploaded: ${fileName}`, 'success');
-                
-            } catch (error) {
-                console.error('Upload error:', error);
-                showNotification('Gagal mengunggah file: ' + error.message, 'error');
-            } finally {
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = '<i class="fas fa-rocket mr-3"></i> Unggah Materi Sekarang';
-                uploadProgress.classList.add('hidden');
-                progressBar.style.width = '0%';
-                progressText.textContent = 'Mengunggah: 0%';
-            }
-        });
+                try {
+                    uploadBtn.disabled = true;
+                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Sedang Mengunggah...';
+                    uploadProgress.classList.remove('hidden');
+                    
+                    const fileName = file.name; 
+                    
+                    const { data, error } = await supabase.storage
+                        .from('Mobile-Intelligence')
+                        .upload(`materi/${fileName}`, file, {
+                            cacheControl: '3600',
+                            upsert: false,
+                            onProgress: (progress) => {
+                                const percent = Math.round((progress.loaded / progress.total) * 100);
+                                progressBar.style.width = `${percent}%`;
+                                progressText.textContent = `Mengunggah: ${percent}%`;
+                            }
+                        });
+                    
+                    if (error) throw error;
+                    
+                    fileInput.value = '';
+                    fileNameSpan.textContent = 'Belum ada file yang dipilih';
+                    fileNameSpan.className = "text-gray-600 font-medium";
+                    
+                    showNotification('File berhasil diunggah!', 'success');
+                    loadMateriList();
+                    addToActivityFeed(`New material uploaded: ${fileName}`, 'success');
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showNotification('Gagal mengunggah file: ' + error.message, 'error');
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = '<i class="fas fa-rocket mr-3"></i> Unggah Materi Sekarang';
+                    uploadProgress.classList.add('hidden');
+                    progressBar.style.width = '0%';
+                    progressText.textContent = 'Mengunggah: 0%';
+                }
+            });
+        }
         
         // Enhanced notification function
         function showNotification(message, type = 'success') {
@@ -916,14 +1228,17 @@
         // Enhanced admin functions
         window.exportData = async function() {
             try {
-                const { data: posts } = await getDocs(collection(db, 'posts'));
-                const { data: userStats } = await getDocs(collection(db, 'userStats'));
+                const postsSnapshot = await getDocs(collection(db, 'posts'));
+                const userStatsSnapshot = await getDocs(collection(db, 'userStats'));
                 
                 const exportData = {
-                    posts: posts.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                    userStats: userStats.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                    posts: [],
+                    userStats: [],
                     exportDate: new Date().toISOString()
                 };
+                
+                postsSnapshot.forEach(doc => exportData.posts.push({ id: doc.id, ...doc.data() }));
+                userStatsSnapshot.forEach(doc => exportData.userStats.push({ id: doc.id, ...doc.data() }));
                 
                 const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -936,6 +1251,7 @@
                 showNotification('Data berhasil diekspor', 'success');
                 addToActivityFeed('Admin exported system data', 'info');
             } catch (error) {
+                console.error('Export error:', error);
                 showNotification('Gagal mengekspor data', 'error');
             }
         };
@@ -946,10 +1262,7 @@
 
         window.clearAllData = function() {
             if (confirm('PERINGATAN: Ini akan menghapus SEMUA data! Apakah Anda yakin?')) {
-                if (confirm('Ketik "HAPUS SEMUA" untuk konfirmasi:') === 'HAPUS SEMUA') {
-                    showNotification('Penghapusan data dimulai...', 'warning');
-                    addToActivityFeed('Admin initiated data cleanup', 'warning');
-                }
+                showNotification('Fitur ini dinonaktifkan untuk keamanan', 'warning');
             }
         };
 
@@ -961,6 +1274,13 @@
         };
 
         window.hapusMateri = hapusMateri;
+        
+        window.logout = function() {
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            }
+        };
 
         // Update last update time
         function updateLastUpdateTime() {
@@ -972,6 +1292,15 @@
 
         // Enhanced page load
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ DOM Content Loaded');
+            
+            // Initialize all stats to 0 first
+            updateStat('totalUsers', 0);
+            updateStat('totalMaterials', 0);
+            updateStat('totalForumPosts', 0);
+            updateStat('totalMaterialReads', 0);
+            
+            // Then setup realtime listeners
             setupRealtimeListeners();
             loadMateriList();
             updateLastUpdateTime();
@@ -980,22 +1309,10 @@
             
             addToActivityFeed('Admin dashboard initialized', 'success');
             
-            const cards = document.querySelectorAll('.stat-card');
-            cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-                    setTimeout(() => {
-                        card.style.transition = 'all 0.6s ease';
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    }, 100);
-                }, index * 100);
-            });
+            console.log('🎉 Admin Dashboard Ready!');
         });
     </script>
     <script type="module" src="./firebase-init.js"></script>
     <script type="module" src="./auth-service.js"></script>
-    <script type="module" src="./admin-dashboard.js"></script>
 </body>
 </html>

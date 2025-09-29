@@ -5,15 +5,14 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "**/Project Ionik/**",
-            "**/backend/**",
-      "*.bat"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      "**/package.json",
+      "**/package-lock.json",
+      "**/*.sh",
+      "**/*.bat",
+      "**/*.exe",
+      "**/*.dll",
+      "**/README*",
+      "**/*.md"
     ]
   }
 }
