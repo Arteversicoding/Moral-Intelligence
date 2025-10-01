@@ -25,26 +25,6 @@ function trackUserLogin() {
     }
 }
 
-// Update active days display
-function updateActiveDaysDisplay() {
-    try {
-        const loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
-        const elements = document.querySelectorAll('[data-stat="active-days"]');
-        
-        elements.forEach(el => {
-            if (el) {
-                el.textContent = loginDates.length;
-                // Add pulse animation
-                el.classList.add('stat-pulse');
-            }
-        });
-        
-        console.log('📈 Active days: ' + loginDates.length);
-    } catch (error) {
-        console.error('❌ Error updating active days:', error);
-    }
-}
-
 // Update quiz completed count
 function updateQuizCompletedDisplay() {
     try {
@@ -85,7 +65,6 @@ function updateForumPostsDisplay() {
 
 // Update all statistics
 function updateAllStats() {
-    updateActiveDaysDisplay();
     updateQuizCompletedDisplay();
     updateForumPostsDisplay();
 }

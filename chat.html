@@ -61,6 +61,43 @@
         /* Saat body dalam mode chat, sembunyikan quiz dan tampilkan chat */
         body.chat-mode .quiz-section { display: none; }
         body.chat-mode .chat-section { display: flex; }
+
+        .chat-bubble {
+        max-width: 80%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        position: relative;
+        word-wrap: break-word;
+        margin-bottom: 0.5rem; /* jarak antar bubble */
+        }
+
+        .chat-bubble.user {
+        background: linear-gradient(to right, #6366f1, #8b5cf6);
+        color: white;
+        border-bottom-right-radius: 4px;
+        margin-left: auto;
+        align-self: flex-end; /* pastikan rata kanan */
+        }
+
+        .chat-bubble.ai {
+        background: #ffffff;
+        color: #1f2937;
+        border-bottom-left-radius: 4px;
+        margin-right: auto;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .timestamp {
+        font-size: 0.7rem;
+        color: #9ca3af;
+        margin-top: 4px;
+        display: block;
+        text-align: right;
+        }
+
+        .message-content strong { font-weight: 600; }
+        .message-content em { font-style: italic; }
+
         
         /* Sembunyikan navigasi bawah saat mode chat aktif */
         body.chat-mode #bottom-nav {
@@ -216,11 +253,23 @@
                     <div class="fixed z-30 bottom-4 inset-x-4">
                         <div class="mx-auto max-w-5xl xl:max-w-7xl p-2 bg-white rounded-2xl shadow-xl transition-all">
                             <div class="flex items-center space-x-2">
-                                <button id="file-upload-button" class="flex-shrink-0 p-3 rounded-full text-gray-500 hover:bg-gray-100 transition-colors">
+                                <button id="file-upload-button" class="flex-shrink-0 p-3 rounded-full text-gray-500 hover:bg-gray-100 transition-colors" title="Upload File PDF">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19"/></svg>
                                 </button>
                                 <input type="file" id="file-input" class="hidden" accept=".pdf"/>
-                                
+                                                  
+                                <button 
+                                id="refresh-chat-btn" 
+                                class="flex-shrink-0 p-3 rounded-full text-gray-500 hover:bg-gray-100 transition-colors" 
+                                title="Refresh Chat AI">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 2v6h-6"/>
+                                    <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                                    <path d="M3 22v-6h6"/>
+                                    <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                                </svg>
+                                </button>
+
                                 <textarea 
                                     id="chat-input" 
                                     rows="1" 
@@ -246,33 +295,47 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
-                        <div class="border-b border-gray-200 mb-6">
-                            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                                <button onclick="showResultsTab()" id="results-tab-btn" class="px-1 py-4 font-medium text-sm border-b-2 border-indigo-500 text-indigo-600">Ringkasan Hasil</button>
-                                <button onclick="showQuizHistory()" id="history-tab-btn" class="px-1 py-4 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">Riwayat Tes</button>
+                        <div class="border-b border-gray-200 mb-4">
+                            <nav class="-mb-px flex space-x-8">
+                                <button id="results-tab-btn" onclick="showResultsTab()" 
+                                  class="border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                  Ringkasan Hasil
+                                </button>
+                              
+                                <button id="history-tab-btn" onclick="showQuizHistory()" 
+                                  class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                  Riwayat Quiz
+                                </button>
                             </nav>
-                        </div>
+                        </div>                          
+                        <!-- Ringkasan Hasil -->
                         <div id="results-content">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center mb-6">
-                                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Skor Keseluruhan</h3>
-                                        <div class="text-5xl font-bold text-indigo-600" id="overall-score">0/100</div>
-                                        <p class="mt-2 text-base font-medium text-indigo-500" id="overall-category">-</p>
-                                    </div>
-                                    <div class="relative h-80 w-full"><canvas id="results-chart"></canvas></div>
-                                    <p class="text-xs text-center text-gray-500 mt-2" id="overall-interpretation">Interpretasi akan muncul di sini.</p>
+                            <div>
+                                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center mb-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Skor Keseluruhan</h3>
+                                <div class="text-5xl font-bold text-indigo-600" id="overall-score">0/100</div>
+                                <p class="mt-2 text-base font-medium text-indigo-500" id="overall-category">-</p>
                                 </div>
-                                <div class="max-h-[50vh] overflow-y-auto pr-2">
-                                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Rincian per Aspek</h3>
-                                    <div id="detailed-results" class="space-y-3"></div>
+                                <div class="relative h-80 w-full">
+                                <canvas id="results-chart"></canvas>
                                 </div>
+                                <p class="text-xs text-center text-gray-500 mt-2" id="overall-interpretation">
+                                Interpretasi akan muncul di sini.
+                                </p>
+                            </div>
+                            <div class="max-h-[50vh] overflow-y-auto pr-2">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">Rincian per Aspek</h3>
+                                <div id="detailed-results" class="space-y-3"></div>
+                            </div>
                             </div>
                         </div>
+                        
+                        <!-- Riwayat Quiz -->
                         <div id="history-content" class="hidden">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4">Riwayat Pengerjaan Quiz</h3>
                             <div id="quiz-history-container" class="space-y-4 max-h-[60vh] overflow-y-auto"></div>
-                        </div>
+                          </div>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-3 justify-end border-t p-6 bg-gray-50 rounded-b-2xl">
                         <button onclick="discussResults()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">Diskusi dengan AI</button>
@@ -281,7 +344,6 @@
                     </div>
                 </div>
             </div>
-
         </div> 
     </div> 
     <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 p-4 z-40">
@@ -293,10 +355,13 @@
             <a href="profil.html" class="nav-button flex flex-col items-center space-y-1 text-gray-500 hover:text-indigo-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-xs font-medium">Profil</span></a>
         </div>
     </div>
-    
-    <script type="module" src="config.js"></script>
-    <script type="module" src="quiz-session-tracker.js"></script>
     <script type="module" src="test-logic.js"></script>
-
+    <script type="module" src="chat-logic.js"></script>
+    <script type="module" src="chat-firestore-service.js"></script>
+    <!-- Di index.html dan profil.html -->
+    <script type="module" src="user-stats.js"></script>
+    <!-- Di chat.html (halaman quiz) -->
+    <script type="module" src="quiz-firestore-service.js"></script>
+    <script type="module" src="admin-quiz-manager.js"></script>
 </body>
 </html>

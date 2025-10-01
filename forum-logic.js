@@ -171,49 +171,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Create comment element
     function createCommentElement(postId, comment, commentIndex) {
-        if (!comment || !comment.author || !comment.text) {
-            return ''; // Skip invalid comments
-        }
-        
+        if (!comment || !comment.author || !comment.text) return '';
+      
         const isCommentOwner = currentUser && currentUser.uid === comment.authorId;
-        const commentActions = isCommentOwner ? `
-            <div class="flex space-x-1 ml-2">
-                <button data-post-id="${postId}" data-comment-index="${commentIndex}" class="edit-comment-button text-blue-500 hover:text-blue-700 text-xs">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button data-post-id="${postId}" data-comment-index="${commentIndex}" class="delete-comment-button text-red-500 hover:text-red-700 text-xs">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6V20a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/></svg>
-                </button>
-            </div>
-        ` : '';
-
+        const commentActions = `
+          <div class="flex space-x-1 ml-2">
+            <button data-post-id="${postId}" data-comment-index="${commentIndex}" class="reply-comment-button text-green-500 hover:text-green-700 text-xs">Balas</button>
+            ${isCommentOwner ? `
+            <button data-post-id="${postId}" data-comment-index="${commentIndex}" class="edit-comment-button text-blue-500 hover:text-blue-700 text-xs">Edit</button>
+            <button data-post-id="${postId}" data-comment-index="${commentIndex}" class="delete-comment-button text-red-500 hover:text-red-700 text-xs">Hapus</button>` : ''}
+          </div>
+        `;
+      
+        // Render replies
+        const repliesHTML = (comment.replies || []).map((reply, i) => `
+          <div class="ml-6 text-gray-600 text-sm border-l-2 pl-2 mt-1">
+            <b>${reply.author}:</b> ${reply.text}
+          </div>
+        `).join('');
+      
         return `
-            <div class="flex items-start justify-between text-sm text-gray-600">
-                <span id="comment-${postId}-${commentIndex}"><b>${comment.author}:</b> ${comment.text}</span>
-                ${commentActions}
+          <div class="flex flex-col text-sm text-gray-600 space-y-1">
+            <div class="flex items-start justify-between">
+              <span id="comment-${postId}-${commentIndex}"><b>${comment.author}:</b> ${comment.text}</span>
+              ${commentActions}
             </div>
+            ${repliesHTML}
+            <div id="reply-form-${postId}-${commentIndex}" class="hidden ml-6 mt-2">
+              <input type="text" placeholder="Tulis balasan..." class="reply-input w-full border border-gray-300 rounded-lg px-2 py-1 text-sm" />
+              <button class="send-reply bg-green-500 text-white px-2 py-1 rounded-lg text-xs mt-1" data-post-id="${postId}" data-comment-index="${commentIndex}">Kirim</button>
+            </div>
+          </div>
         `;
     }
 
     // Handle likes and comments
     forumThreads.addEventListener('click', async (e) => {
+
+        
         // Like post function
         async function likePost(postId) {
             if (!currentUser) {
-                alert('Anda harus login untuk menyukai post.');
-                return;
+              alert('Anda harus login untuk menyukai post.');
+              return;
             }
-
+          
             try {
-                const postRef = doc(db, 'posts', postId);
-                await updateDoc(postRef, {
-                    likes: increment(1)
-                });
-                fetchPosts(); // Refresh to show updated likes
+              const postRef = doc(db, 'posts', postId);
+              const postSnap = await getDocs(collection(db, 'posts'));
+              let targetPost = null;
+          
+              postSnap.forEach((docSnap) => {
+                if (docSnap.id === postId) targetPost = { id: docSnap.id, ...docSnap.data() };
+              });
+          
+              if (!targetPost) return;
+          
+              const likedBy = targetPost.likedBy || [];
+              const hasLiked = likedBy.includes(currentUser.uid);
+          
+              // Toggle like
+              await updateDoc(postRef, {
+                likes: increment(hasLiked ? -1 : 1),
+                likedBy: hasLiked
+                  ? likedBy.filter(uid => uid !== currentUser.uid)
+                  : [...likedBy, currentUser.uid]
+              });
+          
+              fetchPosts(); // Refresh tampilan
             } catch (error) {
-                console.error("Error liking post: ", error);
+              console.error("Error liking post: ", error);
             }
         }
+          
 
         if (e.target.classList.contains('like-button')) {
             const postId = e.target.dataset.id;
@@ -228,38 +258,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     forumThreads.addEventListener('submit', async (e) => {
-        if (e.target.classList.contains('add-comment-form')) {
-            e.preventDefault();
-            if (!currentUser) {
-                alert('Anda harus login untuk berkomentar.');
-                return;
-            }
-
-            const postId = e.target.dataset.id;
-            const commentInput = e.target.querySelector('input');
-            const commentText = commentInput.value;
-
-            if (commentText.trim() === '') return;
-
-            try {
-                const comment = {
-                    text: commentText.trim(),
-                    author: currentUser.displayName || 'Anonymous',
-                    authorId: currentUser.uid,
-                    createdAt: new Date().toISOString()
-                };
-
-                const postRef = doc(db, 'posts', postId);
-                await updateDoc(postRef, {
-                    comments: arrayUnion(comment)
-                });
-                
-                commentInput.value = '';
-                fetchPosts(); // Refresh to show new comment
-            } catch (error) {
-                console.error("Error adding comment: ", error);
-            }
+        // Reply button toggle
+    if (e.target.classList.contains('reply-comment-button')) {
+        const postId = e.target.dataset.postId;
+        const commentIndex = e.target.dataset.commentIndex;
+        const replyForm = document.getElementById(`reply-form-${postId}-${commentIndex}`);
+        replyForm.classList.toggle('hidden');
+    }
+    
+    // Send reply
+    if (e.target.classList.contains('send-reply')) {
+        const postId = e.target.dataset.postId;
+        const commentIndex = parseInt(e.target.dataset.commentIndex);
+        const replyForm = document.getElementById(`reply-form-${postId}-${commentIndex}`);
+        const input = replyForm.querySelector('.reply-input');
+        const replyText = input.value.trim();
+        if (!replyText) return;
+    
+        try {
+        // ambil post dari firestore
+        const postSnapshot = await getDocs(collection(db, 'posts'));
+        let currentPost = null;
+        postSnapshot.forEach(docSnap => {
+            if (docSnap.id === postId) currentPost = { id: docSnap.id, ...docSnap.data() };
+        });
+    
+        if (!currentPost) return;
+    
+        const comments = currentPost.comments || [];
+        const targetComment = comments[commentIndex];
+    
+        if (!targetComment.replies) targetComment.replies = [];
+    
+        targetComment.replies.push({
+            text: replyText,
+            author: currentUser.displayName || 'Anonymous',
+            authorId: currentUser.uid,
+            createdAt: new Date().toISOString()
+        });
+    
+        const postRef = doc(db, 'posts', postId);
+        await updateDoc(postRef, { comments });
+    
+        input.value = '';
+        fetchPosts();
+        } catch (err) {
+        console.error("Error sending reply:", err);
         }
+    }
     });
 
     // Handle edit and delete actions

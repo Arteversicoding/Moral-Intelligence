@@ -114,10 +114,8 @@
                 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        console.log('User found:', user.uid);
                         await displayUserInfo(user);
                     } else {
-                        console.log('No user logged in');
                         showError();
                     }
                 });
@@ -133,44 +131,38 @@
                             lastSignInTime: user.metadata.lastSignInTime
                         };
                         
-                        console.log('Basic user data:', userData);
-                        
-                        // Get additional data from Firestore
-                        try {
-                            const userDoc = await getDoc(doc(db, "users", user.uid));
-                            if (userDoc.exists()) {
-                                const firestoreData = userDoc.data();
-                                console.log('Firestore data:', firestoreData);
-                                userData = {
-                                    ...userData,
-                                    displayName: firestoreData.displayName || 
-                                               (firestoreData.firstName && firestoreData.lastName ? 
-                                                `${firestoreData.firstName} ${firestoreData.lastName}` : 
-                                                userData.displayName),
-                                    profession: firestoreData.profession || 'Tidak disebutkan',
-                                    institution: firestoreData.institution || 'Tidak disebutkan',
-                                    role: firestoreData.role || 'user'
-                                };
-                            } else {
-                                console.log('No Firestore document found');
-                                userData.profession = 'Pendidik';
-                                userData.institution = 'Tidak disebutkan';
-                            }
-                        } catch (firestoreError) {
-                            console.log('Could not fetch Firestore data:', firestoreError);
-                            userData.profession = 'Pendidik';
-                            userData.institution = 'Tidak disebutkan';
+                        // 🔹 Cek Firestore users
+                        const userDoc = await getDoc(doc(db, "users", user.uid));
+                        if (userDoc.exists()) {
+                            const firestoreData = userDoc.data();
+                            userData = {
+                                ...userData,
+                                displayName: firestoreData.displayName || userData.displayName,
+                                profession: firestoreData.profession || 'Tidak disebutkan',
+                                institution: firestoreData.institution || 'Tidak disebutkan',
+                                role: firestoreData.role || 'user'
+                            };
                         }
-                        
-                        console.log('Final user data:', userData);
-                        
-                        // Update UI elements
+
+                        // 🔹 Cek Firestore userStats untuk tanggal bergabung
+                        try {
+                            const userStatsDoc = await getDoc(doc(db, "userStats", user.uid));
+                            if (userStatsDoc.exists()) {
+                                const statsData = userStatsDoc.data();
+                                if (statsData.firstLoginDate) {
+                                    userData.creationTime = statsData.firstLoginDate.toDate();
+                                }
+                            }
+                        } catch (statsError) {
+                            console.error("Error fetching userStats:", statsError);
+                        }
+
+                        // 🔹 Render ke UI
                         document.getElementById('user-name').textContent = userData.displayName;
                         document.getElementById('user-profession').textContent = userData.profession;
                         document.getElementById('user-institution').textContent = userData.institution;
                         document.getElementById('user-email').textContent = userData.email;
                         
-                        // Format dates
                         const createdDate = new Date(userData.creationTime);
                         const lastLoginDate = new Date(userData.lastSignInTime);
                         
@@ -187,8 +179,8 @@
                             hour: '2-digit',
                             minute: '2-digit'
                         });
-                        
-                        // Update avatar
+
+                        // Avatar
                         const avatar = document.getElementById('user-avatar');
                         if (userData.photoURL) {
                             avatar.innerHTML = `<img src="${userData.photoURL}" alt="Profile" class="w-full h-full rounded-full object-cover">`;
@@ -197,12 +189,8 @@
                             avatar.textContent = initials || '👤';
                         }
                         
-                        // Show account info and hide loading
                         document.getElementById('loading-state').classList.add('hidden');
                         document.getElementById('account-info').classList.remove('hidden');
-                        
-                        console.log('Profile updated successfully');
-                        
                     } catch (error) {
                         console.error('Error displaying user info:', error);
                         showError();
@@ -220,7 +208,6 @@
             document.getElementById('account-info').classList.add('hidden');
             document.getElementById('error-state').classList.remove('hidden');
         }
-        
         document.addEventListener('DOMContentLoaded', loadAccountInfo);
     </script>
 </body>

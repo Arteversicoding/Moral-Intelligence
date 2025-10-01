@@ -11,6 +11,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { app, auth } from "./firebase-init.js";
+import { showNotification } from "./config.js";
 
 const db = getFirestore(app);
 
@@ -100,44 +101,34 @@ export class AuthService {
     }
 
     async login(email, password) {
-        try {
-            console.log('Attempting login with:', email); // Debug log
-            console.log('Password length:', password.length); // Debug log    
-
-            await setPersistence(this.auth, browserSessionPersistence);
-            const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
-            const user = userCredential.user;
-
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                this.currentUser = {
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: `${userData.firstName} ${userData.lastName}`,
-                    photoURL: user.photoURL, // or userData.photoURL if you store it
-                    role: this.isAdminEmail(user.email) ? 'admin' : (userData.role || 'user')
-                };
-            } else {
-                // Should not happen for a registered user, but as a fallback
-                this.currentUser = {
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.email, // Fallback display name
-                    photoURL: user.photoURL,
-                    role: this.isAdminEmail(user.email) ? 'admin' : 'user'
-                };
-            }
-
-            this.isAuthenticated = true;
-            return { user: this.currentUser };
-        } catch (error) {
-            console.error('Login error details:', error.code, error.message);
-            console.error("Login error:", error);
-            throw new Error(this.getFriendlyErrorMessage(error));
+      try {
+        console.log("Firebase project ID:", this.auth.app.options.projectId);
+        console.log("Login email:", email);
+    
+        await setPersistence(this.auth, browserSessionPersistence);
+        const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
+        const user = userCredential.user;
+    
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+    
+        showNotification("✅ Login berhasil! Selamat datang 👋", "success");
+        setTimeout(() => window.location.href = "index.html", 1000);
+    
+        return user;
+      } catch (error) {
+        console.error("Login error details:", error.code, error.message);
+    
+        if (error.code === "auth/invalid-credential") {
+          showNotification("❌ Kredensial tidak valid. Periksa email & password Anda.", "error");
+        } else if (error.code === "permission-denied") {
+          showNotification("🚫 Akses Firestore ditolak. Periksa rules Firestore Anda.", "error");
+        } else {
+          showNotification(`⚠️ ${error.message}`, "error");
         }
+        throw error;
+      }
     }
-
+    
     async loginWithGoogle() {
         try {
             await setPersistence(this.auth, browserSessionPersistence);

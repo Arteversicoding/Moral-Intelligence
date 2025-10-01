@@ -1,251 +1,184 @@
-// quiz-session-tracker.js - Track Quiz Sessions
-import { db } from './firebase-init.js';
+import { auth } from './firebase-init.js';
 import { 
-    collection, 
-    addDoc, 
-    query, 
-    where, 
-    getDocs,
-    serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    saveQuizToFirestore, 
+    getQuizHistoryFromFirestore,
+    syncLocalToFirestore 
+} from './quiz-firestore-service.js';
+
+let isFirestoreReady = false;
+let syncInProgress = false;
 
 /**
- * Save a quiz session to Firestore
- * Call this function when a user completes a quiz or has a significant interaction
+ * Initialize session tracker
  */
-export async function saveQuizSession(sessionData) {
-    try {
-        // Get current user
-        const userData = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        
-        if (!userData.uid) {
-            console.warn('No user logged in, skipping quiz session save');
-            return null;
+export function initSessionTracker() {
+    console.log('🔄 Initializing quiz session tracker...');
+    
+    // Listen to auth state changes
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            console.log('✅ User logged in, syncing quiz history...');
+            await syncQuizHistory();
+            isFirestoreReady = true;
+        } else {
+            console.log('⚠️ User not logged in');
+            isFirestoreReady = false;
         }
+    });
+}
 
-        const quizSessionRef = collection(db, 'quizSessions');
+/**
+ * Sync local quiz history to Firestore
+ */
+async function syncQuizHistory() {
+    if (syncInProgress) {
+        console.log('⏳ Sync already in progress...');
+        return;
+    }
+    
+    syncInProgress = true;
+    
+    try {
+        // Sync localStorage to Firestore
+        await syncLocalToFirestore();
         
-        const session = {
-            userId: userData.uid,
-            userEmail: userData.email,
-            userName: userData.displayName || userData.email || 'Anonymous',
-            
-            // Session details
-            sessionType: sessionData.type || 'quiz', // 'quiz', 'chat', 'practice'
-            topic: sessionData.topic || 'General',
-            questionsAnswered: sessionData.questionsAnswered || 0,
-            correctAnswers: sessionData.correctAnswers || 0,
-            score: sessionData.score || 0,
-            
-            // Timing
-            duration: sessionData.duration || 0, // in seconds
-            startTime: sessionData.startTime || new Date().toISOString(),
-            endTime: new Date().toISOString(),
-            
-            // Additional data
-            difficulty: sessionData.difficulty || 'medium',
-            completed: sessionData.completed !== false, // default true
-            
-            // Metadata
-            timestamp: serverTimestamp(),
-            device: getDeviceType(),
-            browser: getBrowserInfo()
-        };
-
-        const docRef = await addDoc(quizSessionRef, session);
-        console.log('✅ Quiz session saved with ID:', docRef.id);
+        // Load history from Firestore
+        const firestoreHistory = await getQuizHistoryFromFirestore(10);
         
-        return docRef.id;
+        if (firestoreHistory.length > 0) {
+            // Update localStorage with Firestore data
+            const localHistory = getLocalQuizHistory();
+            
+            // Merge histories, prioritizing Firestore data
+            const mergedHistory = mergeHistories(localHistory, firestoreHistory);
+            saveLocalQuizHistory(mergedHistory);
+            
+            console.log('✅ Quiz history synced successfully');
+        }
     } catch (error) {
-        console.error('❌ Error saving quiz session:', error);
-        return null;
+        console.error('❌ Error syncing quiz history:', error);
+    } finally {
+        syncInProgress = false;
     }
 }
 
 /**
- * Get quiz sessions for a specific user
+ * Merge local and Firestore histories
  */
-export async function getUserQuizSessions(userId) {
+function mergeHistories(localHistory, firestoreHistory) {
+    const merged = [...firestoreHistory];
+    
+    // Add local entries that don't exist in Firestore
+    localHistory.forEach(localEntry => {
+        const existsInFirestore = firestoreHistory.some(fsEntry => 
+            fsEntry.timestamp === localEntry.date || 
+            (fsEntry.overallScore === localEntry.overallScore && 
+             Math.abs(new Date(fsEntry.timestamp) - new Date(localEntry.date)) < 60000)
+        );
+        
+        if (!existsInFirestore) {
+            merged.push(localEntry);
+        }
+    });
+    
+    // Sort by date descending
+    return merged.sort((a, b) => {
+        const dateA = new Date(a.timestamp || a.date);
+        const dateB = new Date(b.timestamp || b.date);
+        return dateB - dateA;
+    }).slice(0, 10);
+}
+
+/**
+ * Save quiz result (both localStorage and Firestore)
+ */
+export async function saveQuizResult(resultsData) {
     try {
-        const quizSessionRef = collection(db, 'quizSessions');
-        const q = query(quizSessionRef, where('userId', '==', userId));
-        const snapshot = await getDocs(q);
+        // Save to localStorage first
+        const historyEntry = { 
+            date: new Date().toISOString(), 
+            ...resultsData 
+        };
         
-        const sessions = [];
-        snapshot.forEach(doc => {
-            sessions.push({ id: doc.id, ...doc.data() });
-        });
+        const localHistory = getLocalQuizHistory();
+        localHistory.unshift(historyEntry);
+        const updatedHistory = localHistory.slice(0, 10);
+        saveLocalQuizHistory(updatedHistory);
         
-        return sessions;
+        // Save to Firestore if user is logged in
+        if (isFirestoreReady && auth.currentUser) {
+            const firestoreId = await saveQuizToFirestore(resultsData);
+            
+            if (firestoreId) {
+                // Update local entry with Firestore ID
+                updatedHistory[0].id = firestoreId;
+                saveLocalQuizHistory(updatedHistory);
+                console.log('✅ Quiz saved to both localStorage and Firestore');
+            }
+        } else {
+            console.log('✅ Quiz saved to localStorage (Firestore not ready)');
+        }
+        
+        return updatedHistory;
     } catch (error) {
-        console.error('Error getting user quiz sessions:', error);
+        console.error('❌ Error saving quiz result:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get quiz history (from localStorage or Firestore)
+ */
+export async function getQuizHistory() {
+    try {
+        if (isFirestoreReady && auth.currentUser) {
+            const firestoreHistory = await getQuizHistoryFromFirestore(10);
+            if (firestoreHistory.length > 0) {
+                saveLocalQuizHistory(firestoreHistory);
+                return firestoreHistory;
+            }
+        }
+        
+        return getLocalQuizHistory();
+    } catch (error) {
+        console.error('❌ Error getting quiz history:', error);
+        return getLocalQuizHistory();
+    }
+}
+
+/**
+ * Get local quiz history
+ */
+function getLocalQuizHistory() {
+    try {
+        const data = localStorage.getItem('quizHistory');
+        return data ? JSON.parse(data) : [];
+    } catch {
         return [];
     }
 }
 
 /**
- * Get user's quiz statistics
+ * Save local quiz history
  */
-export async function getUserQuizStats(userId) {
+function saveLocalQuizHistory(history) {
     try {
-        const sessions = await getUserQuizSessions(userId);
-        
-        if (sessions.length === 0) {
-            return {
-                totalSessions: 0,
-                totalQuestions: 0,
-                totalCorrect: 0,
-                averageScore: 0,
-                totalTime: 0
-            };
-        }
-
-        const stats = {
-            totalSessions: sessions.length,
-            totalQuestions: sessions.reduce((sum, s) => sum + (s.questionsAnswered || 0), 0),
-            totalCorrect: sessions.reduce((sum, s) => sum + (s.correctAnswers || 0), 0),
-            totalTime: sessions.reduce((sum, s) => sum + (s.duration || 0), 0),
-            completedSessions: sessions.filter(s => s.completed).length
-        };
-
-        stats.averageScore = stats.totalQuestions > 0 
-            ? Math.round((stats.totalCorrect / stats.totalQuestions) * 100) 
-            : 0;
-
-        return stats;
-    } catch (error) {
-        console.error('Error calculating quiz stats:', error);
-        return null;
+        localStorage.setItem('quizHistory', JSON.stringify(history));
+    } catch {
+        console.warn('Could not save to localStorage');
     }
 }
 
 /**
- * Helper: Get device type
+ * Check if Firestore is ready
  */
-function getDeviceType() {
-    const ua = navigator.userAgent;
-    if (/tablet|ipad|playbook|silk/i.test(ua)) {
-        return 'tablet';
-    }
-    if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile/i.test(ua)) {
-        return 'mobile';
-    }
-    return 'desktop';
+export function isFirestoreAvailable() {
+    return isFirestoreReady;
 }
 
-/**
- * Helper: Get browser info
- */
-function getBrowserInfo() {
-    const ua = navigator.userAgent;
-    let browserName = 'Unknown';
-    
-    if (ua.indexOf('Firefox') > -1) {
-        browserName = 'Firefox';
-    } else if (ua.indexOf('Chrome') > -1) {
-        browserName = 'Chrome';
-    } else if (ua.indexOf('Safari') > -1) {
-        browserName = 'Safari';
-    } else if (ua.indexOf('Edge') > -1) {
-        browserName = 'Edge';
-    } else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) {
-        browserName = 'Opera';
-    }
-    
-    return browserName;
+// Auto-initialize on load
+if (typeof window !== 'undefined') {
+    initSessionTracker();
 }
 
-/**
- * Quick save function for simple quiz completions
- * Use this in your quiz pages when a user completes a quiz
- */
-export async function quickSaveQuizCompletion(questionsAnswered, correctAnswers, duration) {
-    return await saveQuizSession({
-        type: 'quiz',
-        questionsAnswered,
-        correctAnswers,
-        score: Math.round((correctAnswers / questionsAnswered) * 100),
-        duration,
-        completed: true
-    });
-}
-
-/**
- * Save a chat/AI interaction session
- */
-export async function saveChatSession(messageCount, duration, topic = 'General') {
-    return await saveQuizSession({
-        type: 'chat',
-        topic,
-        questionsAnswered: messageCount,
-        duration,
-        completed: true
-    });
-}
-
-// Auto-track page sessions (optional)
-let sessionStartTime = null;
-let messageCount = 0;
-
-/**
- * Start tracking a session automatically
- */
-export function startSessionTracking() {
-    sessionStartTime = Date.now();
-    messageCount = 0;
-    console.log('📊 Session tracking started');
-}
-
-/**
- * Increment message count (call this when user sends a message)
- */
-export function incrementMessageCount() {
-    messageCount++;
-}
-
-/**
- * End and save the session automatically
- */
-export async function endSessionTracking(type = 'chat', additionalData = {}) {
-    if (!sessionStartTime) {
-        console.warn('No session to end');
-        return;
-    }
-
-    const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
-    
-    await saveQuizSession({
-        type,
-        questionsAnswered: messageCount,
-        duration,
-        completed: true,
-        ...additionalData
-    });
-
-    sessionStartTime = null;
-    messageCount = 0;
-    
-    console.log('📊 Session tracking ended and saved');
-}
-
-// Example integration for quiz pages:
-// 
-// Import at the top of your quiz page:
-// import { quickSaveQuizCompletion } from './quiz-session-tracker.js';
-//
-// When quiz is completed:
-// await quickSaveQuizCompletion(10, 8, 120); // 10 questions, 8 correct, 120 seconds
-
-// Example integration for chat pages:
-//
-// Import at the top:
-// import { startSessionTracking, incrementMessageCount, endSessionTracking } from './quiz-session-tracker.js';
-//
-// When page loads:
-// startSessionTracking();
-//
-// When user sends message:
-// incrementMessageCount();
-//
-// When leaving page or user logs out:
-// await endSessionTracking('chat', { topic: 'Moral Education' });
+console.log('✅ Quiz session tracker loaded');

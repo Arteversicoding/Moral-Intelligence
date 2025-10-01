@@ -1,7 +1,13 @@
-// test-logic.js - Quiz logic only
+// test-logic.js - Quiz logic dengan Firestore integration
 import { setupChatListeners, addMessageToChat } from './chat-logic.js';
+import { auth } from './firebase-init.js';
+import { 
+    saveQuizResultToFirestore, 
+    getQuizHistoryFromFirestore,
+    deleteQuizResult
+} from './quiz-firestore-service.js';
 
-// === Data Soal & Kata Kunci ===
+// === Data Soal & Kata Kunci === (tetap sama seperti sebelumnya)
 const questions = {
     empati: [
         "Bagaimana Anda merespons perasaan orang lain dalam situasi sosial, misalnya dengan kata-kata, sentuhan, atau ekspresi wajah?",
@@ -120,13 +126,14 @@ let scores = {};
 let totalQuestions = 70;
 let radarChartInstance = null;
 let quizHistory = [];
+let quizStartTime = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Test logic initializing...');
+    console.log('Quiz logic initializing...');
     
-    // Load quiz history
-    quizHistory = getQuizHistory();
+    // Load quiz history from Firestore
+    loadQuizHistory();
     
     // Initialize quiz
     initializeQuiz();
@@ -135,27 +142,32 @@ document.addEventListener('DOMContentLoaded', () => {
     setupQuizEventListeners();
     setupModeToggle();
     
-    // Setup chat listeners from chat-logic.js
+    // Setup chat listeners
     setupChatListeners();
     
-    console.log('✅ Test logic initialized');
+    console.log('Quiz logic initialized');
 });
 
-// Storage functions
-function getQuizHistory() {
+// Load quiz history from Firestore
+async function loadQuizHistory() {
     try {
-        const data = localStorage.getItem('quizHistory');
-        return data ? JSON.parse(data) : [];
-    } catch {
-        return [];
-    }
-}
-
-function saveQuizHistory(history) {
-    try {
-        localStorage.setItem('quizHistory', JSON.stringify(history));
-    } catch {
-        console.warn('Could not save to localStorage');
+        const user = auth.currentUser;
+        if (!user) {
+            console.log('User not logged in, waiting...');
+            // Wait for auth state to be ready
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    quizHistory = await getQuizHistoryFromFirestore(user.uid, 10);
+                    console.log(`Loaded ${quizHistory.length} quiz history from Firestore`);
+                }
+            });
+        } else {
+            quizHistory = await getQuizHistoryFromFirestore(user.uid, 10);
+            console.log(`Loaded ${quizHistory.length} quiz history from Firestore`);
+        }
+    } catch (error) {
+        console.error('Error loading quiz history:', error);
+        quizHistory = [];
     }
 }
 
@@ -211,6 +223,7 @@ function initializeQuiz() {
     currentQuestionNumber = 1;
     answers = {};
     scores = {};
+    quizStartTime = Date.now();
     
     aspects.forEach(aspect => {
         answers[aspect] = [];
@@ -354,13 +367,31 @@ function moveToPreviousQuestion() {
 }
 
 // Complete quiz
-function completeQuiz() {
+async function completeQuiz() {
     const resultsData = calculateFinalResults();
-    const historyEntry = { date: new Date().toISOString(), ...resultsData };
-    quizHistory.unshift(historyEntry);
-    quizHistory = quizHistory.slice(0, 10);
-    saveQuizHistory(quizHistory);
-    displayResults(resultsData);
+    
+    // Calculate time spent
+    const timeSpentMs = Date.now() - quizStartTime;
+    const timeSpentMinutes = Math.round(timeSpentMs / 60000);
+    resultsData.timeSpent = timeSpentMinutes;
+    resultsData.totalQuestions = totalQuestions;
+    resultsData.answers = answers; // Include answers for admin review
+    
+    try {
+        // Save to Firestore
+        const docId = await saveQuizResultToFirestore(resultsData);
+        console.log('Quiz saved to Firestore with ID:', docId);
+        
+        // Reload history
+        await loadQuizHistory();
+        
+        // Show results
+        displayResults(resultsData);
+        
+    } catch (error) {
+        console.error('Error saving quiz:', error);
+        alert('Gagal menyimpan hasil quiz. Pastikan Anda sudah login.');
+    }
 }
 
 // Calculate final results
@@ -415,29 +446,81 @@ function displayResults(resultsData) {
     }, 150);
 }
 
-// Show quiz history
-function showQuizHistory() {
+// Show quiz history from Firestore
+async function showQuizHistory() {
     document.getElementById('results-content').classList.add('hidden');
     document.getElementById('history-content').classList.remove('hidden');
     document.getElementById('results-tab-btn').classList.remove('border-indigo-500', 'text-indigo-600');
     document.getElementById('history-tab-btn').classList.add('border-indigo-500', 'text-indigo-600');
 
+    // Reload history to get latest data
+    await loadQuizHistory();
+
     const container = document.getElementById('quiz-history-container');
-    container.innerHTML = quizHistory.length === 0 ? `<p class="text-center text-gray-500">Tidak ada riwayat tes.</p>` :
-        quizHistory.map((attempt, index) => {
-            const date = new Date(attempt.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-            return `
-                <div class="p-4 border rounded-lg hover:bg-gray-50">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-semibold">Tes Selesai: ${date}</p>
-                            <p class="text-sm text-gray-600">Skor Akhir: <span class="font-bold">${attempt.overallScore.toFixed(0)}/100</span> (${attempt.overallCategory})</p>
-                        </div>
-                        <button onclick="displayResults(quizHistory[${index}])" class="text-indigo-600 hover:underline text-sm font-medium">Lihat Detail</button>
+    
+    if (quizHistory.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500">Tidak ada riwayat tes.</p>`;
+        return;
+    }
+    
+    container.innerHTML = quizHistory.map((attempt, index) => {
+        const date = new Date(attempt.date).toLocaleDateString('id-ID', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        return `
+            <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-center">
+                    <div class="flex-1">
+                        <p class="font-semibold">Tes Selesai: ${date}</p>
+                        <p class="text-sm text-gray-600">Skor Akhir: <span class="font-bold">${attempt.overallScore.toFixed(0)}/100</span> (${attempt.overallCategory})</p>
+                        ${attempt.timeSpent ? `<p class="text-xs text-gray-500 mt-1">Waktu pengerjaan: ${attempt.timeSpent} menit</p>` : ''}
                     </div>
-                </div>`;
-        }).join('');
+                    <div class="flex space-x-2">
+                        <button onclick="viewHistoryDetail('${attempt.id}')" class="text-indigo-600 hover:underline text-sm font-medium">
+                            Lihat Detail
+                        </button>
+                        <button onclick="deleteHistory('${attempt.id}')" class="text-red-600 hover:underline text-sm font-medium">
+                            Hapus
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
 }
+
+// View history detail
+window.viewHistoryDetail = function(quizId) {
+    const attempt = quizHistory.find(h => h.id === quizId);
+    if (attempt) {
+        displayResults(attempt);
+    }
+};
+
+// Delete history
+window.deleteHistory = async function(quizId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus riwayat quiz ini?')) {
+        return;
+    }
+    
+    try {
+        const success = await deleteQuizResult(quizId);
+        if (success) {
+            alert('Riwayat berhasil dihapus');
+            await loadQuizHistory();
+            showQuizHistory();
+        } else {
+            alert('Gagal menghapus riwayat');
+        }
+    } catch (error) {
+        console.error('Error deleting history:', error);
+        alert('Terjadi kesalahan saat menghapus riwayat');
+    }
+};
 
 // Show results tab
 function showResultsTab() {
@@ -561,7 +644,7 @@ function drawResultsChart(labels, data) {
     });
 }
 
-// Export to PDF
+// Export to PDF (sama seperti sebelumnya)
 async function exportToPDF() {
     const participantName = prompt("Silakan masukkan nama Anda untuk laporan:", "Peserta Tes");
     if (!participantName) {
@@ -728,11 +811,13 @@ function capitalize(str) {
 
 // Export global functions
 window.closeResults = closeResults;
+window.displayResults = displayResults;
 window.discussResults = discussResults;
 window.exportToPDF = exportToPDF;
 window.restartQuiz = restartQuiz;
 window.showResultsTab = showResultsTab;
 window.showQuizHistory = showQuizHistory;
 window.switchMode = switchMode;
+window.quizHistory = quizHistory;
 
-console.log('✅ Test logic module loaded');
+console.log('Test logic module with Firestore loaded');

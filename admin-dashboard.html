@@ -5,185 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Moral Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom gradients and animations */
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .card-hover {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-        
-        .stat-card {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .stat-card:hover::before {
-            left: 100%;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-        
-        .btn-premium {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-premium::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn-premium:hover::before {
-            left: 100%;
-        }
-        
-        .btn-premium:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        .icon-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .animated-gradient {
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        #notification {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        .form-input {
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            background: linear-gradient(white, white) padding-box, 
-                       linear-gradient(45deg, #667eea, #764ba2) border-box;
-        }
-        
-        .form-input:focus {
-            border-color: transparent;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            transform: scale(1.02);
-        }
-        
-        .progress-bar-animated {
-            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
-            background-size: 200% 200%;
-            animation: progressFlow 2s ease infinite;
-        }
-        
-        @keyframes progressFlow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .section-divider {
-            background: linear-gradient(90deg, transparent, #667eea, transparent);
-            height: 1px;
-            margin: 2rem 0;
-        }
-        
-        .metric-grid {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        }
-
-        .stat-pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .stat-card { position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .stat-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
     <script type="module" src="auth-guard.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
-    <!-- Enhanced Navigation -->
+    
+    <!-- Navigation -->
     <nav class="gradient-bg shadow-2xl relative overflow-hidden">
         <div class="absolute inset-0 bg-black opacity-10"></div>
         <div class="max-w-7xl mx-auto px-4 relative z-10">
             <div class="flex justify-between items-center py-6">
                 <div class="flex items-center space-x-4">
                     <a href="index.html" class="text-2xl font-bold text-white flex items-center">
-                        <i class="fas fa-brain mr-3 icon-float text-3xl"></i>
+                        <i class="fas fa-brain mr-3 text-3xl"></i>
                         <span class="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
                             Moral Intelligence
                         </span>
                     </a>
-                    <span class="glass-effect text-red-100 px-4 py-2 rounded-full text-sm font-bold border border-red-200/30">
+                    <span class="bg-white/20 text-red-100 px-4 py-2 rounded-full text-sm font-bold">
                         Admin Panel
                     </span>
                 </div>
                 <div class="flex items-center space-x-6">
-                    <a href="index.html" class="text-white/90 hover:text-white transition-all duration-300 hover:scale-110">
+                    <a href="index.html" class="text-white/90 hover:text-white transition-all">
                         <i class="fas fa-home mr-2"></i>Beranda
                     </a>
-                    <a href="materi-guru.html" class="text-white/90 hover:text-white transition-all duration-300 hover:scale-110">
-                        <i class="fas fa-book mr-2"></i>Materi Guru
+                    <a href="admin-quiz-dashboard.html" class="text-white/90 hover:text-white transition-all">
+                        <i class="fas fa-chart-line mr-2"></i>Quiz Dashboard
                     </a>
-                    <button onclick="logout()" class="bg-red-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                    <button onclick="logout()" class="bg-red-500/90 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all">
                         <i class="fas fa-sign-out-alt mr-2"></i>Logout
                     </button>
                 </div>
@@ -193,29 +54,25 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Enhanced Header -->
+        
+        <!-- Header -->
         <div class="text-center mb-12 relative">
-            <div class="absolute inset-0 flex items-center justify-center">
-                <div class="w-64 h-64 bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
-            </div>
-            <div class="relative z-10">
-                <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-                    Admin Dashboard
-                </h1>
-                <p class="text-xl text-gray-600 font-medium">Kelola sistem Moral Intelligence dengan mudah</p>
-            </div>
+            <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+                Admin Dashboard
+            </h1>
+            <p class="text-xl text-gray-600 font-medium">Kelola sistem Moral Intelligence dengan mudah</p>
         </div>
 
-        <!-- Enhanced Stats Overview - Realtime with User Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-8 mb-12">
             <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-8 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium mb-2">Total Users</p>
-                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalUsers" data-global-stat="totalUsers">0</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalUsers">0</p>
                         <p class="text-blue-200 text-xs">Registered Users</p>
                     </div>
-                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
                         <i class="fas fa-users text-2xl"></i>
                     </div>
                 </div>
@@ -225,10 +82,10 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium mb-2">Total Materi</p>
-                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalMaterials" data-global-stat="totalMaterials">0</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalMaterials">0</p>
                         <p class="text-green-200 text-xs">Learning Resources</p>
                     </div>
-                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
                         <i class="fas fa-book text-2xl"></i>
                     </div>
                 </div>
@@ -238,36 +95,56 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium mb-2">Forum Posts</p>
-                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalForumPosts" data-global-stat="totalForumPosts">0</p>
-                        <p class="text-purple-200 text-xs">Community Discussions</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalForumPosts">0</p>
+                        <p class="text-purple-200 text-xs">Discussions</p>
                     </div>
-                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
                         <i class="fas fa-comments text-2xl"></i>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Realtime Activity Feed -->
-        <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mr-4">
-                    <i class="fas fa-bolt text-white text-xl"></i>
-                </div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    Aktivitas Real-time
-                </h2>
-            </div>
-            
-            <div id="realtime-activity-feed" class="space-y-4 max-h-80 overflow-y-auto">
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-wifi text-4xl mb-4"></i>
-                    <p>Menunggu aktivitas real-time...</p>
+            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-8 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium mb-2">Quiz Sessions</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalQuizSessions">0</p>
+                        <p class="text-orange-200 text-xs">Completed</p>
+                    </div>
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-clipboard-check text-2xl"></i>
+                    </div>
                 </div>
             </div>
+
+            <div class="stat-card bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl shadow-xl p-8 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-pink-100 text-sm font-medium mb-2">Surveys</p>
+                        <p class="text-4xl font-bold mb-1 stat-pulse" id="totalSurveyResponses">0</p>
+                        <p class="text-pink-200 text-xs">Responses</p>
+                    </div>
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-poll text-2xl"></i>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Survey Responses Viewer -->
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Skor Quiz</h3>
+                <canvas id="score-distribution-chart" height="300"></canvas>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Rata-rata per Aspek</h3>
+                <canvas id="aspect-average-chart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Survey Responses -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center">
@@ -291,233 +168,7 @@
             </div>
         </div>
 
-        <!-- Enhanced User Activity Stats -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Top Forum Contributors -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl flex items-center justify-center mr-4">
-                        <i class="fas fa-trophy text-white text-xl"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-                        Top Forum Contributors
-                    </h3>
-                </div>
-                
-                <div id="top-contributors" class="space-y-4">
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-users text-4xl mb-4"></i>
-                        <p>Loading contributors...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Material Engagement -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mr-4">
-                        <i class="fas fa-chart-pie text-white text-xl"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        Material Engagement
-                    </h3>
-                </div>
-                
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-700">Completion Rate</span>
-                        <span class="font-bold text-purple-600" id="completion-rate">0%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div id="completion-progress" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 mt-6">
-                        <div class="text-center p-4 bg-purple-50 rounded-xl">
-                            <p class="text-2xl font-bold text-purple-600 stat-pulse" id="materials-started">0</p>
-                            <p class="text-sm text-purple-700">Materials Started</p>
-                        </div>
-                        <div class="text-center p-4 bg-green-50 rounded-xl">
-                            <p class="text-2xl font-bold text-green-600 stat-pulse" id="materials-completed">0</p>
-                            <p class="text-sm text-green-700">Materials Completed</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced System Info & Usage Stats in Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Enhanced System Info -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl flex items-center justify-center mr-4">
-                        <i class="fas fa-server text-white text-xl"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-                        System Information
-                    </h3>
-                </div>
-                
-                <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border-2 border-dashed border-blue-300 text-center">
-                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-brain text-green-600 mr-2"></i>
-                            Realtime System Status
-                        </h4>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Firestore:</span>
-                                <div class="flex items-center">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                    <span class="text-sm font-bold text-green-700" id="firestoreStatus">Connected</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">User Stats:</span>
-                                <div class="flex items-center">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                    <span class="text-sm font-bold text-green-700" id="userStatsStatus">Active</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-gray-600">Last Update:</span>
-                                <span class="text-sm text-gray-500" id="lastUpdate">-</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200/50">
-                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-heartbeat text-blue-600 mr-2"></i>
-                            System Health
-                        </h4>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Storage:</span>
-                                <div class="flex items-center">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                    <span class="text-sm font-bold text-green-700">Healthy</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Performance:</span>
-                                <div class="flex items-center">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                    <span class="text-sm font-bold text-green-700">Optimal</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enhanced Usage Statistics -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mr-4">
-                        <i class="fas fa-chart-pie text-white text-xl"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        Usage Statistics
-                    </h3>
-                </div>
-                
-                <!-- Device Usage -->
-                <div class="mb-6">
-                    <h4 class="text-lg font-bold text-gray-700 mb-4 flex items-center">
-                        <span class="w-1 h-6 bg-gradient-to-b from-purple-500 to-blue-500 rounded-full mr-2"></span>
-                        Device Usage
-                    </h4>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="card-hover bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200/50">
-                            <div class="text-3xl mb-2">💻</div>
-                            <p class="text-2xl font-bold text-gray-800 stat-pulse" id="webUsers">0</p>
-                            <p class="text-xs text-gray-600 font-medium">Web Users</p>
-                        </div>
-                        <div class="card-hover bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200/50">
-                            <div class="text-3xl mb-2">📱</div>
-                            <p class="text-2xl font-bold text-gray-800 stat-pulse" id="androidUsers">0</p>
-                            <p class="text-xs text-gray-600 font-medium">Android Users</p>
-                        </div>
-                        <div class="card-hover bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200/50">
-                            <div class="text-3xl mb-2">🍎</div>
-                            <p class="text-2xl font-bold text-gray-800 stat-pulse" id="iosUsers">0</p>
-                            <p class="text-xs text-gray-600 font-medium">iOS Users</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Feature Usage -->
-                <div>
-                    <h4 class="text-lg font-bold text-gray-700 mb-4 flex items-center">
-                        <span class="w-1 h-6 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full mr-2"></span>
-                        Popular Features
-                    </h4>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="card-hover bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl text-center border border-blue-200/50">
-                            <div class="text-3xl mb-2">🤖</div>
-                            <p class="text-2xl font-bold text-blue-700 stat-pulse" id="chatbotUsers">0</p>
-                            <p class="text-xs text-blue-600 font-medium">Chatbot AI</p>
-                        </div>
-                        <div class="card-hover bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl text-center border border-green-200/50">
-                            <div class="text-3xl mb-2">📚</div>
-                            <p class="text-2xl font-bold text-green-700 stat-pulse" id="materiUsers">0</p>
-                            <p class="text-xs text-green-600 font-medium">Learning Materials</p>
-                        </div>
-                        <div class="card-hover bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl text-center border border-purple-200/50">
-                            <div class="text-3xl mb-2">💬</div>
-                            <p class="text-2xl font-bold text-purple-700 stat-pulse" id="forumUsers">0</p>
-                            <p class="text-xs text-purple-600 font-medium">Forum Community</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Quick Actions -->
-        <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
-            <div class="flex items-center mb-6">
-                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mr-4">
-                    <i class="fas fa-bolt text-white text-xl"></i>
-                </div>
-                <h3 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    Quick Actions
-                </h3>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button onclick="exportData()" class="btn-premium text-white px-6 py-4 rounded-2xl transition-all duration-300 group">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-download mr-3 text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="font-semibold">Export Data</span>
-                    </div>
-                </button>
-                
-                <button onclick="exportUserStats()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 rounded-2xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-chart-line mr-3 text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="font-semibold">Export Stats</span>
-                    </div>
-                </button>
-                
-                <button onclick="clearAllData()" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 rounded-2xl hover:from-red-600 hover:to-red-700 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-trash mr-3 text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="font-semibold">Clear Data</span>
-                    </div>
-                </button>
-                
-                <button onclick="refreshStats()" class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-4 rounded-2xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-refresh mr-3 text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="font-semibold">Refresh Stats</span>
-                    </div>
-                </button>
-            </div>
-        </div>
-
-        <!-- Enhanced Material List Section -->
+        <!-- Material Management -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
             <div class="flex items-center mb-8">
                 <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mr-4">
@@ -529,11 +180,14 @@
             </div>
             
             <div id="materi-list" class="space-y-4">
-                <!-- Daftar materi akan ditampilkan di sini -->
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i>
+                    <p class="text-gray-600">Memuat materi...</p>
+                </div>
             </div>
         </div>
 
-        <!-- Enhanced File Upload Section -->
+        <!-- File Upload Section -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/50">
             <div class="flex items-center mb-8">
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-4">
@@ -545,30 +199,26 @@
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Form Section -->
                 <div class="space-y-6">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-3">
-                            <i class="fas fa-heading text-blue-500 mr-2"></i>
-                            Judul Materi
+                            <i class="fas fa-heading text-blue-500 mr-2"></i>Judul Materi
                         </label>
                         <input type="text" id="materi-title" 
-                               class="form-input w-full px-6 py-4 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                               placeholder="Masukkan judul materi yang menarik...">
+                               class="w-full px-6 py-4 rounded-2xl border-2 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="Masukkan judul materi...">
                     </div>
                     
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-3">
-                            <i class="fas fa-align-left text-green-500 mr-2"></i>
-                            Deskripsi
+                            <i class="fas fa-align-left text-green-500 mr-2"></i>Deskripsi
                         </label>
                         <textarea id="materi-desc" rows="4" 
-                                  class="form-input w-full px-6 py-4 rounded-2xl focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                                  placeholder="Berikan deskripsi singkat tentang materi ini..."></textarea>
+                                  class="w-full px-6 py-4 rounded-2xl border-2 border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                                  placeholder="Berikan deskripsi singkat..."></textarea>
                     </div>
                 </div>
                 
-                <!-- Upload Section -->
                 <div class="space-y-6">
                     <div class="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border-2 border-dashed border-blue-300 text-center">
                         <div class="mb-4">
@@ -578,8 +228,7 @@
                         </div>
                         
                         <label class="cursor-pointer bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg inline-flex items-center">
-                            <i class="fas fa-folder-open mr-2"></i>
-                            Pilih File
+                            <i class="fas fa-folder-open mr-2"></i>Pilih File
                             <input type="file" id="file-upload" class="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx" />
                         </label>
                         
@@ -588,15 +237,13 @@
                         </div>
                     </div>
                     
-                    <button id="upload-btn" class="w-full btn-premium text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300">
-                        <i class="fas fa-rocket mr-3"></i> 
-                        Unggah Materi Sekarang
+                    <button id="upload-btn" class="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 hover:shadow-lg">
+                        <i class="fas fa-rocket mr-3"></i> Unggah Materi Sekarang
                     </button>
                     
-                    <!-- Enhanced Progress Bar -->
                     <div id="upload-progress" class="hidden">
                         <div class="bg-gray-200 rounded-full h-4 mb-3 overflow-hidden">
-                            <div id="progress-bar" class="progress-bar-animated h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                         </div>
                         <p id="progress-text" class="text-center text-sm font-semibold text-gray-700">Mengunggah: 0%</p>
                     </div>
@@ -605,699 +252,279 @@
         </div>
     </div>
 
-    <!-- Enhanced Notification Element -->
+    <!-- Notification -->
     <div id="notification" class="fixed top-6 right-6 px-8 py-4 rounded-2xl shadow-2xl z-50 opacity-0 transform translate-y-4 transition-all duration-500 backdrop-blur-sm border border-white/20"></div>
 
-    <!-- Import User Stats System (replaces realtime-stats and material-tracker) -->
-    <script type="module" src="user-stats.js"></script>
-
-    <!-- Scripts -->
     <script type="module">
         import { supabase } from './supabase.js';
         import { db } from './firebase-init.js';
-        import { collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getQuizAnalytics } from './quiz-firestore-service.js';
         
-        console.log('🚀 Admin Dashboard Loading...');
+        let scoreChart = null;
+        let aspectChart = null;
         
-        // Initialize DOM elements
-        const fileInput = document.getElementById('file-upload');
-        const uploadBtn = document.getElementById('upload-btn');
-        const fileNameSpan = document.getElementById('file-name');
-        const uploadProgress = document.getElementById('upload-progress');
-        const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
-        
-        // Initialize realtime listeners with User Stats - FIXED VERSION
+        /* === Realtime listeners === */
         function setupRealtimeListeners() {
-            console.log('Setting up real-time listeners...');
-            
-            try {
-                // Listen to forum posts
-                const postsRef = collection(db, 'posts');
-                onSnapshot(postsRef, (snapshot) => {
-                    const totalPosts = snapshot.size;
-                    updateStat('totalForumPosts', totalPosts);
-                    addToActivityFeed(`Forum posts: ${totalPosts}`, 'info');
-                    console.log('✅ Forum Posts:', totalPosts);
-                }, (error) => {
-                    console.error('❌ Error listening to posts:', error);
-                    updateStat('totalForumPosts', 0);
-                });
-                
-                // Listen to user stats
-                const userStatsRef = collection(db, 'userStats');
-                onSnapshot(userStatsRef, (snapshot) => {
-                    let totalUsers = 0;
-                    let totalMaterialReads = 0;
-                    let totalMaterialCompletions = 0;
-                    
-                    snapshot.forEach((doc) => {
-                        const data = doc.data();
-                        totalUsers++;
-                        totalMaterialReads += data.materialsRead || 0;
-                        totalMaterialCompletions += data.materialsCompleted || 0;
-                    });
-                    
-                    updateStat('totalUsers', totalUsers);
-                    updateStat('totalMaterialReads', totalMaterialReads);
-                    updateStat('materials-started', totalMaterialReads);
-                    updateStat('materials-completed', totalMaterialCompletions);
-                    
-                    // Update completion rate
-                    const completionRate = totalMaterialReads > 0 ? Math.round((totalMaterialCompletions / totalMaterialReads) * 100) : 0;
-                    updateCompletionRate(completionRate);
-                    
-                    addToActivityFeed(`Active users: ${totalUsers} | Materials read: ${totalMaterialReads}`, 'success');
-                    console.log('✅ Users:', totalUsers, '| Material Reads:', totalMaterialReads);
-                }, (error) => {
-                    console.error('❌ Error listening to userStats:', error);
-                    updateStat('totalUsers', 0);
-                });
-                
-                // Listen to survey responses
-                const surveyRef = collection(db, 'surveyResponses');
-                onSnapshot(surveyRef, (snapshot) => {
-                    const totalResponses = snapshot.size;
-                    console.log('✅ Survey Responses:', totalResponses);
-                    displaySurveyResponses(snapshot);
-                }, (error) => {
-                    console.error('❌ Error listening to survey responses:', error);
-                    displaySurveyResponsesEmpty();
-                });
-                
-            } catch (error) {
-                console.error('❌ Error setting up listeners:', error);
-            }
+          // Users
+          onSnapshot(collection(db, 'userStats'), (snap) =>
+            updateStat('totalUsers', snap.size));
+        
+          // Forum posts
+          onSnapshot(collection(db, 'posts'), (snap) =>
+            updateStat('totalForumPosts', snap.size));
+        
+          // Quiz sessions
+          onSnapshot(collection(db, 'quizResults'), (snap) =>
+            updateStat('totalQuizSessions', snap.size));
+        
+          // Survey responses
+          onSnapshot(collection(db, 'surveyResponses'), (snap) => {
+            updateStat('totalSurveyResponses', snap.size);
+            displaySurveyResponses(snap);
+          });
         }
         
-        // Display survey responses
+        /* === Material count === */
+        async function updateMaterialCount() {
+          const { data: files, error } = await supabase
+            .storage
+            .from('Mobile-Intelligence')
+            .list('materi');
+          if (error) return updateStat('totalMaterials', 0);
+          const actualFiles = files ? files.filter(f => f.name !== '.emptyFolderPlaceholder') : [];
+          updateStat('totalMaterials', actualFiles.length);
+        }
+        
+        /* === Helper update === */
+        function updateStat(statId, value) {
+          const el = document.getElementById(statId);
+          if (!el) return;
+          el.textContent = value;
+          el.classList.add('stat-pulse');
+          setTimeout(() => el.classList.remove('stat-pulse'), 2000);
+        }
+        
+        /* === Survey list card === */
         function displaySurveyResponses(snapshot) {
-            const container = document.getElementById('survey-responses-list');
-            if (!container) return;
-
-            if (snapshot.empty) {
-                displaySurveyResponsesEmpty();
-                return;
-            }
-
-            const responses = [];
-            snapshot.forEach(doc => {
-                responses.push({ id: doc.id, ...doc.data() });
-            });
-
-            // Sort by timestamp (newest first)
-            responses.sort((a, b) => {
-                const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                return timeB - timeA;
-            });
-
-            container.innerHTML = responses.map(response => {
-                const avgRating = calculateAverageRating(response.ratings);
-                return `
-                    <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h4 class="font-bold text-lg text-gray-800">${response.userName || 'Anonymous'}</h4>
-                                <p class="text-sm text-gray-500">${response.userEmail || 'No email'}</p>
-                                <p class="text-xs text-gray-400 mt-1">
-                                    ${response.timestamp ? new Date(response.timestamp).toLocaleString('id-ID') : 'No date'}
-                                </p>
-                            </div>
-                            <button onclick="viewSurveyDetail('${response.id}')" 
-                                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                                <i class="fas fa-eye mr-2"></i>Detail
-                            </button>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div class="bg-blue-50 p-3 rounded-lg">
-                                <p class="text-xs text-blue-600 font-medium">Perangkat</p>
-                                <p class="text-sm font-bold text-blue-800">${response.device || 'N/A'}</p>
-                            </div>
-                            <div class="bg-green-50 p-3 rounded-lg">
-                                <p class="text-xs text-green-600 font-medium">Frekuensi</p>
-                                <p class="text-sm font-bold text-green-800">${response.frequency || 'N/A'}</p>
-                            </div>
-                            <div class="bg-purple-50 p-3 rounded-lg">
-                                <p class="text-xs text-purple-600 font-medium">Fitur Favorit</p>
-                                <p class="text-sm font-bold text-purple-800">${response.mostUsedFeature || 'N/A'}</p>
-                            </div>
-                            <div class="bg-orange-50 p-3 rounded-lg">
-                                <p class="text-xs text-orange-600 font-medium">Tujuan</p>
-                                <p class="text-sm font-bold text-orange-800">${response.purpose || 'N/A'}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-3 rounded-lg">
-                            <p class="text-xs text-gray-600 font-medium mb-2">Rating Rata-rata</p>
-                            <div class="flex items-center">
-                                <span class="text-2xl font-bold text-yellow-600">${avgRating}</span>
-                                <span class="text-sm text-gray-500 ml-2">/ 5.0</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+          const container = document.getElementById('survey-responses-list');
+          if (!container) return;
         
-        function displaySurveyResponsesEmpty() {
-            const container = document.getElementById('survey-responses-list');
-            if (!container) return;
-            
+          if (snapshot.empty) {
             container.innerHTML = `
-                <div class="text-center py-12 text-gray-500">
-                    <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                    <p>Belum ada survey response</p>
+              <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                <p>Belum ada survey response</p>
+              </div>`;
+            return;
+          }
+        
+          const responses = [];
+          snapshot.forEach(doc => responses.push({ id: doc.id, ...doc.data() }));
+        
+          responses.sort((a,b)=> (b.timestamp?new Date(b.timestamp).getTime():0) - (a.timestamp?new Date(a.timestamp).getTime():0));
+        
+          container.innerHTML = responses.map(r=>{
+            const avgRating = calculateAverageRating(r.ratings);
+            return `
+              <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 class="font-bold text-lg text-gray-800">${r.userName||'Anonymous'}</h4>
+                    <p class="text-sm text-gray-500">${r.userEmail||'No email'}</p>
+                    <p class="text-xs text-gray-400 mt-1">${r.timestamp?new Date(r.timestamp).toLocaleString('id-ID'):'No date'}</p>
+                  </div>
+                  <button onclick="viewSurveyDetail('${r.id}')"
+                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    <i class="fas fa-eye mr-2"></i>Detail
+                  </button>
                 </div>
-            `;
+        
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div class="bg-blue-50 p-3 rounded-lg">
+                    <p class="text-xs text-blue-600 font-medium">Perangkat</p>
+                    <p class="text-sm font-bold text-blue-800">${r.device||'N/A'}</p>
+                  </div>
+                  <div class="bg-green-50 p-3 rounded-lg">
+                    <p class="text-xs text-green-600 font-medium">Fitur Favorit</p>
+                    <p class="text-sm font-bold text-green-800">${r.favoriteFeature||'N/A'}</p>
+                  </div>
+                  <div class="bg-purple-50 p-3 rounded-lg">
+                    <p class="text-xs text-purple-600 font-medium">Tujuan</p>
+                    <p class="text-sm font-bold text-purple-800">${r.purpose||'N/A'}</p>
+                  </div>
+                  <div class="bg-orange-50 p-3 rounded-lg">
+                    <p class="text-xs text-orange-600 font-medium">Frekuensi</p>
+                    <p class="text-sm font-bold text-orange-800">${r.frequency||'N/A'}</p>
+                  </div>
+                </div>
+        
+                <div class="bg-gray-50 p-3 rounded-lg">
+                  <p class="text-xs text-gray-600 font-medium mb-2">Rating Rata-rata</p>
+                  <div class="flex items-center">
+                    <span class="text-2xl font-bold text-yellow-600">${avgRating}</span>
+                    <span class="text-sm text-gray-500 ml-2">/ 5.0</span>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
         }
         
         function calculateAverageRating(ratings) {
-            if (!ratings || typeof ratings !== 'object') return 'N/A';
-            const values = Object.values(ratings).filter(v => typeof v === 'number');
-            if (values.length === 0) return 'N/A';
-            const sum = values.reduce((a, b) => a + b, 0);
-            return (sum / values.length).toFixed(1);
+          if (!ratings || typeof ratings!=='object') return 'N/A';
+          const vals=Object.values(ratings).filter(v=>typeof v==='number');
+          if (!vals.length) return 'N/A';
+          return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
         }
         
-        // View survey detail
-        window.viewSurveyDetail = async function(surveyId) {
-            try {
-                const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-                const docRef = doc(db, 'surveyResponses', surveyId);
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    showSurveyModal(data);
-                } else {
-                    alert('Survey tidak ditemukan');
-                }
-            } catch (error) {
-                console.error('Error fetching survey detail:', error);
-                alert('Gagal memuat detail survey');
-            }
-        };
+        function formatRatingKey(key){
+          const labels={
+            textReadability:'Teks Mudah Dibaca',
+            colorLayout:'Warna dan Tata Letak',
+            attractiveDesign:'Desain Menarik',
+            crossPlatform:'Lintas Platform',
+            easeOfUse:'Kemudahan Penggunaan',
+            chatbotRelevance:'Relevansi Chatbot',
+            mediaSupport:'Media Pendukung',
+            materialClarity:'Kejelasan Materi',
+            questionVariety:'Variasi Soal',
+            learningSupport:'Dukungan Pembelajaran'
+          };
+          return labels[key]||key;
+        }
         
-        // Show survey modal
-        function showSurveyModal(data) {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
-            
-            const ratingsHTML = data.ratings ? Object.entries(data.ratings).map(([key, value]) => {
-                const label = formatRatingKey(key);
-                return `
+        /* === Modal detail survey dengan info tambahan === */
+        function showSurveyModal(data){
+          const modal=document.createElement('div');
+          modal.className='fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+          modal.onclick=(e)=>{if(e.target===modal)modal.remove();};
+        
+          const ratingsHTML=data.ratings?Object.entries(data.ratings).map(([k,v])=>`
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <p class="text-sm text-gray-600 mb-2">${formatRatingKey(k)}</p>
+              <div class="flex items-center">
+                <div class="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
+                  <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-full" style="width:${(v/5)*100}%"></div>
+                </div>
+                <span class="ml-3 font-bold text-yellow-600">${v}/5</span>
+              </div>
+            </div>`).join(''):'<p class="text-gray-500">No ratings available</p>';
+        
+          modal.innerHTML=`
+            <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8">
+              <div class="flex justify-between items-start mb-6">
+                <div>
+                  <h2 class="text-2xl font-bold text-gray-800">${data.userName||'Anonymous'}</h2>
+                  <p class="text-gray-600">${data.userEmail||'No email'}</p>
+                </div>
+                <button onclick="this.closest('.fixed').remove()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <i class="fas fa-times text-xl text-gray-600"></i>
+                </button>
+              </div>
+        
+              <!-- Tambahan info di modal -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-blue-50 p-3 rounded-lg">
+                  <p class="text-xs text-blue-600 font-medium">Perangkat</p>
+                  <p class="text-sm font-bold text-blue-800">${data.device||'N/A'}</p>
+                </div>
+                <div class="bg-green-50 p-3 rounded-lg">
+                  <p class="text-xs text-green-600 font-medium">Fitur Favorit</p>
+                  <p class="text-sm font-bold text-green-800">${data.favoriteFeature||'N/A'}</p>
+                </div>
+                <div class="bg-purple-50 p-3 rounded-lg">
+                  <p class="text-xs text-purple-600 font-medium">Tujuan</p>
+                  <p class="text-sm font-bold text-purple-800">${data.purpose||'N/A'}</p>
+                </div>
+                <div class="bg-orange-50 p-3 rounded-lg">
+                  <p class="text-xs text-orange-600 font-medium">Frekuensi</p>
+                  <p class="text-sm font-bold text-orange-800">${data.frequency||'N/A'}</p>
+                </div>
+              </div>
+        
+              <div class="space-y-6">
+                <div>
+                  <h3 class="text-lg font-bold text-gray-800 mb-4">Detail Penilaian</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${ratingsHTML}
+                  </div>
+                </div>
+                ${data.additionalFeedback?`
+                  <div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Saran & Masukan</h3>
                     <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-sm text-gray-600 mb-2">${label}</p>
-                        <div class="flex items-center">
-                            <div class="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                                <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-full" 
-                                     style="width: ${(value/5)*100}%"></div>
-                            </div>
-                            <span class="ml-3 font-bold text-yellow-600">${value}/5</span>
-                        </div>
+                      <p class="text-gray-700">${data.additionalFeedback}</p>
                     </div>
-                `;
-            }).join('') : '<p class="text-gray-500">No ratings available</p>';
-            
-            modal.innerHTML = `
-                <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800">${data.userName || 'Anonymous'}</h2>
-                            <p class="text-gray-600">${data.userEmail || 'No email'}</p>
-                            <p class="text-sm text-gray-500 mt-1">
-                                ${data.timestamp ? new Date(data.timestamp).toLocaleString('id-ID') : 'No date'}
-                            </p>
-                        </div>
-                        <button onclick="this.closest('.fixed').remove()" 
-                                class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <i class="fas fa-times text-xl text-gray-600"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800 mb-4">Detail Penilaian</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                ${ratingsHTML}
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800 mb-4">Informasi Penggunaan</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="bg-blue-50 p-4 rounded-lg">
-                                    <p class="text-sm text-blue-600 mb-1">Perangkat</p>
-                                    <p class="font-bold text-blue-800">${data.device || 'N/A'}</p>
-                                </div>
-                                <div class="bg-green-50 p-4 rounded-lg">
-                                    <p class="text-sm text-green-600 mb-1">Frekuensi</p>
-                                    <p class="font-bold text-green-800">${data.frequency || 'N/A'}</p>
-                                </div>
-                                <div class="bg-purple-50 p-4 rounded-lg">
-                                    <p class="text-sm text-purple-600 mb-1">Fitur Favorit</p>
-                                    <p class="font-bold text-purple-800">${data.mostUsedFeature || 'N/A'}</p>
-                                </div>
-                                <div class="bg-orange-50 p-4 rounded-lg">
-                                    <p class="text-sm text-orange-600 mb-1">Tujuan</p>
-                                    <p class="font-bold text-orange-800">${data.purpose || 'N/A'}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        ${data.additionalFeedback ? `
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-800 mb-4">Saran & Masukan</h3>
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <p class="text-gray-700">${data.additionalFeedback}</p>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
+                  </div>`:''}
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
         }
         
-        function formatRatingKey(key) {
-            const labels = {
-                textReadability: 'Teks Mudah Dibaca',
-                colorLayout: 'Warna dan Tata Letak',
-                attractiveDesign: 'Desain Menarik',
-                crossPlatform: 'Lintas Platform',
-                easeOfUse: 'Kemudahan Penggunaan',
-                chatbotRelevance: 'Relevansi Chatbot',
-                mediaSupport: 'Media Pendukung',
-                materialClarity: 'Kejelasan Materi',
-                questionVariety: 'Variasi Soal',
-                learningSupport: 'Dukungan Pembelajaran'
-            };
-            return labels[key] || key;
-        }
-        
-        // Export surveys function
-        window.exportSurveys = async function() {
-            try {
-                const surveyRef = collection(db, 'surveyResponses');
-                const snapshot = await getDocs(surveyRef);
-                
-                if (snapshot.empty) {
-                    showNotification('Tidak ada data survey untuk diekspor', 'error');
-                    return;
-                }
-
-                let csv = 'Timestamp,User,Email,Device,Frequency,Feature,Purpose,Avg Rating,Feedback\n';
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const avgRating = calculateAverageRating(data.ratings);
-                    csv += `"${data.timestamp || ''}","${data.userName || ''}","${data.userEmail || ''}","${data.device || ''}","${data.frequency || ''}","${data.mostUsedFeature || ''}","${data.purpose || ''}","${avgRating}","${(data.additionalFeedback || '').replace(/"/g, '""')}"\n`;
-                });
-
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `survey-responses-${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                showNotification('Survey berhasil diekspor', 'success');
-                addToActivityFeed('Admin exported survey responses', 'info');
-            } catch (error) {
-                console.error('Error exporting surveys:', error);
-                showNotification('Gagal mengekspor survey', 'error');
-            }
+        /* supaya onclick berfungsi */
+        window.viewSurveyDetail=async function(surveyId){
+          try{
+            const docSnap=await getDoc(doc(db,'surveyResponses',surveyId));
+            if(docSnap.exists()){
+              showSurveyModal(docSnap.data());
+            }else alert('Survey tidak ditemukan');
+          }catch(e){
+            console.error('Error fetching survey detail:',e);
+            alert('Gagal memuat detail survey');
+          }
         };
         
-        function updateStat(statId, value) {
-            const elements = document.querySelectorAll(`#${statId}, [data-global-stat="${statId}"]`);
-            
-            if (elements.length === 0) {
-                console.warn(`⚠️ No elements found for stat: ${statId}`);
-                return;
-            }
-            
-            elements.forEach(el => {
-                el.textContent = value;
-                
-                // Add pulse animation only for numeric values
-                if (typeof value === 'number' && value > 0) {
-                    el.classList.add('stat-pulse');
-                    setTimeout(() => {
-                        el.classList.remove('stat-pulse');
-                    }, 2000);
-                }
+        /* === Chart quiz analytics === */
+        async function loadQuizAnalytics(){
+          const analytics=await getQuizAnalytics();
+          if(!analytics)return;
+        
+          const scoreCtx=document.getElementById('score-distribution-chart').getContext('2d');
+          const scoreLabels=Object.keys(analytics.scoreDistribution);
+          const scoreValues=Object.values(analytics.scoreDistribution);
+        
+          if(scoreChart){
+            scoreChart.data.labels=scoreLabels;
+            scoreChart.data.datasets[0].data=scoreValues;
+            scoreChart.update();
+          }else{
+            scoreChart=new Chart(scoreCtx,{
+              type:'bar',
+              data:{
+                labels:scoreLabels,
+                datasets:[{label:'Jumlah Sesi',data:scoreValues,backgroundColor:'#6366f1'}]
+              },
+              options:{responsive:true,animation:false}
             });
-        }
+          }
         
-        function updateCompletionRate(rate) {
-            const rateElement = document.getElementById('completion-rate');
-            const progressElement = document.getElementById('completion-progress');
-            
-            if (rateElement) rateElement.textContent = `${rate}%`;
-            if (progressElement) progressElement.style.width = `${rate}%`;
-        }
+          const aspectCtx=document.getElementById('aspect-average-chart').getContext('2d');
+          const aspectLabels=Object.keys(analytics.aspectAverages).map(a=>a.charAt(0).toUpperCase()+a.slice(1));
+          const aspectValues=Object.values(analytics.aspectAverages);
         
-        function addToActivityFeed(message, type = 'info') {
-            const feed = document.getElementById('realtime-activity-feed');
-            if (!feed) return;
-            
-            const timestamp = new Date().toLocaleTimeString('id-ID');
-            
-            const typeColors = {
-                success: 'bg-green-50 border-green-200 text-green-800',
-                error: 'bg-red-50 border-red-200 text-red-800',
-                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                info: 'bg-blue-50 border-blue-200 text-blue-800'
-            };
-            
-            const activityItem = document.createElement('div');
-            activityItem.className = `p-4 rounded-lg border ${typeColors[type]} flex justify-between items-center`;
-            activityItem.innerHTML = `
-                <span>${message}</span>
-                <span class="text-xs opacity-75">${timestamp}</span>
-            `;
-            
-            // Add to top of feed
-            if (feed.children.length === 0 || feed.children[0].textContent.includes('Menunggu')) {
-                feed.innerHTML = '';
-            }
-            
-            feed.insertBefore(activityItem, feed.firstChild);
-            
-            // Keep only last 10 items
-            while (feed.children.length > 10) {
-                feed.removeChild(feed.lastChild);
-            }
-        }
-        
-        // File input change handler
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    const fileName = e.target.files[0].name;
-                    fileNameSpan.innerHTML = `<i class="fas fa-file-alt text-blue-500 mr-2"></i>${fileName}`;
-                    fileNameSpan.className = "text-blue-600 font-semibold";
-                } else {
-                    fileNameSpan.textContent = 'Belum ada file yang dipilih';
-                    fileNameSpan.className = "text-gray-600 font-medium";
-                }
+          if(aspectChart){
+            aspectChart.data.labels=aspectLabels;
+            aspectChart.data.datasets[0].data=aspectValues;
+            aspectChart.update();
+          }else{
+            aspectChart=new Chart(aspectCtx,{
+              type:'radar',
+              data:{
+                labels:aspectLabels,
+                datasets:[{label:'Rata-rata Skor',data:aspectValues,backgroundColor:'rgba(99,102,241,0.2)',borderColor:'#6366f1'}]
+              },
+              options:{animation:false,scales:{r:{suggestedMin:0,suggestedMax:100}}}
             });
-        }
-
-        // Helper functions
-        function formatFileSize(bytes) {
-            if (!bytes) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // Enhanced material list loading function
-        async function loadMateriList() {
-            const materiList = document.getElementById('materi-list');
-            if (!materiList) return;
-            
-            materiList.innerHTML = `
-                <div class="flex items-center justify-center py-12">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                    <p class="ml-4 text-gray-600 font-medium">Memuat daftar materi...</p>
-                </div>
-            `;
-
-            try {
-                const { data: files, error } = await supabase
-                    .storage
-                    .from('Mobile-Intelligence')
-                    .list('materi');
-
-                if (error) throw error;
-
-                // Filter and update total materials count
-                const actualFiles = files ? files.filter(f => f.name !== '.emptyFolderPlaceholder') : [];
-                updateStat('totalMaterials', actualFiles.length);
-                console.log('✅ Total Materials:', actualFiles.length);
-
-                if (!actualFiles || actualFiles.length === 0) {
-                    materiList.innerHTML = `
-                        <div class="text-center py-12">
-                            <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
-                            <p class="text-gray-500 text-lg font-medium">Belum ada materi yang diupload</p>
-                            <p class="text-gray-400 text-sm">Mulai dengan mengunggah materi pembelajaran pertama Anda</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                materiList.innerHTML = '';
-
-                for (const file of actualFiles) {
-                    const { data: { publicUrl } } = supabase
-                        .storage
-                        .from('Mobile-Intelligence')
-                        .getPublicUrl(`materi/${file.name}`);
-
-                    const div = document.createElement('div');
-                    div.className = "card-hover bg-gradient-to-r from-white to-gray-50 p-4 sm:p-6 rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden";
-                    div.innerHTML = `
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-                            <div class="flex items-center space-x-3 sm:space-x-4 w-full sm:w-auto">
-                                <div class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                    <i class="fas fa-file-alt text-white text-lg sm:text-xl"></i>
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-bold text-gray-800 text-base sm:text-lg mb-1 truncate" title="${file.name}">${file.name}</p>
-                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-x-4 sm:gap-y-2 text-xs sm:text-sm text-gray-500">
-                                        <span class="flex items-center whitespace-nowrap">
-                                            <i class="fas fa-hdd mr-1"></i>
-                                            ${formatFileSize(file.metadata?.size)}
-                                        </span>
-                                        <span class="flex items-center whitespace-nowrap">
-                                            <i class="fas fa-calendar mr-1"></i>
-                                            ${new Date(file.metadata?.lastModified).toLocaleDateString('id-ID')}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex flex-shrink-0 space-x-2 sm:space-x-3 w-full sm:w-auto">
-                                <a href="${publicUrl}?download" 
-                                   download="${file.name}"
-                                   class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:scale-105 shadow-lg font-medium text-xs sm:text-sm whitespace-nowrap text-center">
-                                    <i class="fas fa-download mr-1.5"></i> Unduh
-                                </a>
-                                <button onclick="hapusMateri('${file.name}')" 
-                                        class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 hover:scale-105 shadow-lg font-medium text-xs sm:text-sm whitespace-nowrap">
-                                    <i class="fas fa-trash-alt mr-1.5"></i> Hapus
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    materiList.appendChild(div);
-                }
-            } catch (error) {
-                console.error('❌ Gagal memuat daftar materi:', error);
-                materiList.innerHTML = `
-                    <div class="text-center py-12">
-                        <i class="fas fa-exclamation-triangle text-6xl text-red-300 mb-4"></i>
-                        <p class="text-red-600 text-lg font-medium">Gagal memuat daftar materi</p>
-                        <p class="text-red-500 text-sm">${error.message}</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Enhanced delete material function
-        async function hapusMateri(namaFile) {
-            if (!confirm(`Apakah Anda yakin ingin menghapus "${namaFile}"?`)) {
-                return;
-            }
-
-            try {
-                const { error } = await supabase
-                    .storage
-                    .from('Mobile-Intelligence')
-                    .remove([`materi/${namaFile}`]);
-
-                if (error) throw error;
-
-                showNotification('Materi berhasil dihapus', 'success');
-                loadMateriList();
-                addToActivityFeed(`Material deleted: ${namaFile}`, 'warning');
-            } catch (error) {
-                console.error('Gagal menghapus materi:', error);
-                showNotification(`Gagal menghapus materi: ${error.message}`, 'error');
-            }
-        }
-
-        // Enhanced upload button click handler
-        if (uploadBtn) {
-            uploadBtn.addEventListener('click', async () => {
-                const file = fileInput.files[0];
-                
-                if (!file) {
-                    showNotification('Silakan pilih file terlebih dahulu', 'error');
-                    return;
-                }
-
-                try {
-                    uploadBtn.disabled = true;
-                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Sedang Mengunggah...';
-                    uploadProgress.classList.remove('hidden');
-                    
-                    const fileName = file.name; 
-                    
-                    const { data, error } = await supabase.storage
-                        .from('Mobile-Intelligence')
-                        .upload(`materi/${fileName}`, file, {
-                            cacheControl: '3600',
-                            upsert: false,
-                            onProgress: (progress) => {
-                                const percent = Math.round((progress.loaded / progress.total) * 100);
-                                progressBar.style.width = `${percent}%`;
-                                progressText.textContent = `Mengunggah: ${percent}%`;
-                            }
-                        });
-                    
-                    if (error) throw error;
-                    
-                    fileInput.value = '';
-                    fileNameSpan.textContent = 'Belum ada file yang dipilih';
-                    fileNameSpan.className = "text-gray-600 font-medium";
-                    
-                    showNotification('File berhasil diunggah!', 'success');
-                    loadMateriList();
-                    addToActivityFeed(`New material uploaded: ${fileName}`, 'success');
-                    
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    showNotification('Gagal mengunggah file: ' + error.message, 'error');
-                } finally {
-                    uploadBtn.disabled = false;
-                    uploadBtn.innerHTML = '<i class="fas fa-rocket mr-3"></i> Unggah Materi Sekarang';
-                    uploadProgress.classList.add('hidden');
-                    progressBar.style.width = '0%';
-                    progressText.textContent = 'Mengunggah: 0%';
-                }
-            });
+          }
         }
         
-        // Enhanced notification function
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            
-            const baseClasses = 'fixed top-6 right-6 px-8 py-4 rounded-2xl shadow-2xl z-50 transition-all duration-500 backdrop-blur-sm border border-white/20 font-semibold';
-            
-            if (type === 'success') {
-                notification.className = `${baseClasses} bg-gradient-to-r from-green-500 to-emerald-500 text-white`;
-            } else {
-                notification.className = `${baseClasses} bg-gradient-to-r from-red-500 to-rose-500 text-white`;
-            }
-            
-            notification.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
-            notification.classList.add('opacity-100', 'translate-y-0', 'scale-100');
-            
-            setTimeout(() => {
-                notification.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
-                notification.classList.add('opacity-0', 'translate-y-4', 'scale-95');
-            }, 4000);
-        }
-
-        // Enhanced admin functions
-        window.exportData = async function() {
-            try {
-                const postsSnapshot = await getDocs(collection(db, 'posts'));
-                const userStatsSnapshot = await getDocs(collection(db, 'userStats'));
-                
-                const exportData = {
-                    posts: [],
-                    userStats: [],
-                    exportDate: new Date().toISOString()
-                };
-                
-                postsSnapshot.forEach(doc => exportData.posts.push({ id: doc.id, ...doc.data() }));
-                userStatsSnapshot.forEach(doc => exportData.userStats.push({ id: doc.id, ...doc.data() }));
-                
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `moral-intelligence-data-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                showNotification('Data berhasil diekspor', 'success');
-                addToActivityFeed('Admin exported system data', 'info');
-            } catch (error) {
-                console.error('Export error:', error);
-                showNotification('Gagal mengekspor data', 'error');
-            }
-        };
-
-        window.exportUserStats = function() {
-            showNotification('Fitur ekspor statistik user sedang dikembangkan', 'info');
-        };
-
-        window.clearAllData = function() {
-            if (confirm('PERINGATAN: Ini akan menghapus SEMUA data! Apakah Anda yakin?')) {
-                showNotification('Fitur ini dinonaktifkan untuk keamanan', 'warning');
-            }
-        };
-
-        window.refreshStats = function() {
-            setupRealtimeListeners();
-            loadMateriList();
-            showNotification('Statistik berhasil diperbarui', 'success');
-            addToActivityFeed('Admin refreshed statistics', 'info');
-        };
-
-        window.hapusMateri = hapusMateri;
-        
-        window.logout = function() {
-            if (confirm('Apakah Anda yakin ingin logout?')) {
-                localStorage.removeItem('currentUser');
-                window.location.href = 'login.html';
-            }
-        };
-
-        // Update last update time
-        function updateLastUpdateTime() {
-            const lastUpdateElement = document.getElementById('lastUpdate');
-            if (lastUpdateElement) {
-                lastUpdateElement.textContent = new Date().toLocaleTimeString('id-ID');
-            }
-        }
-
-        // Enhanced page load
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('✅ DOM Content Loaded');
-            
-            // Initialize all stats to 0 first
-            updateStat('totalUsers', 0);
-            updateStat('totalMaterials', 0);
-            updateStat('totalForumPosts', 0);
-            
-            // Then setup realtime listeners
-            setupRealtimeListeners();
-            loadMateriList();
-            updateLastUpdateTime();
-            
-            setInterval(updateLastUpdateTime, 60000);
-            
-            addToActivityFeed('Admin dashboard initialized', 'success');
-            
-            console.log('🎉 Admin Dashboard Ready!');
+        /* === Init === */
+        document.addEventListener('DOMContentLoaded',()=>{
+          setupRealtimeListeners();
+          updateMaterialCount();
+          loadQuizAnalytics();
         });
-    </script>
-    <script type="module" src="./firebase-init.js"></script>
-    <script type="module" src="./auth-service.js"></script>
+    </script>            
 </body>
 </html>
+

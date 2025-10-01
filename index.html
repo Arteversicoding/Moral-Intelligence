@@ -5,24 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beranda - Moral Intelligence</title>
     
-    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#667eea">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Moral Intelligence">
-    <meta name="description" content="Aplikasi pembelajaran moral intelligence untuk pengembangan karakter dan etika">
+    <meta name="description" content="Aplikasi pembelajaran moral intelligence">
     
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
-    
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.svg">
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.svg">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" sizes="32x32" href="/icons/icon-32x32.svg">
-    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/icons/icon-16x16.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -36,25 +22,14 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
-        #app-container {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-in-out;
-        }
     </style>
-    <!-- PWA Installer -->
-    <script src="/pwa-installer.js"></script>
-    
     <script type="module" src="auth-guard.js"></script>
-    <script type="module" src="auth-service.js"></script>
-    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-100">
 
-    <!-- Main App Container -->
     <div id="app-container" class="pb-24">
 
-        <!-- Header with Inline Stats -->
+        <!-- Header with Stats -->
         <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-6 rounded-b-3xl shadow-xl">
             <div class="flex items-center justify-between mb-6">
                 <div>
@@ -63,8 +38,7 @@
                 </div>
                 <div class="relative">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path d="M14 9V5a3 3 0 0 0-6 0v4" />
                             <rect x="2" y="9" width="20" height="12" rx="2" ry="2" />
                         </svg>
@@ -144,9 +118,7 @@
                 </div>
                 <div class="space-y-3">
                     <div class="flex items-start space-x-3 bg-gray-50 rounded-xl p-3">
-                        <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                            ED
-                        </div>
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">ED</div>
                         <div>
                             <h4 class="font-semibold text-sm text-gray-800">Edukasi Plus</h4>
                             <p class="text-xs text-gray-600">Strategi baru menghadapi bullying di sekolah</p>
@@ -155,9 +127,7 @@
                     </div>
 
                     <div class="flex items-start space-x-3 bg-gray-50 rounded-xl p-3">
-                        <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                            PS
-                        </div>
+                        <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">PS</div>
                         <div>
                             <h4 class="font-semibold text-sm text-gray-800">Psikologi Sekolah</h4>
                             <p class="text-xs text-gray-600">Workshop mengelola emosi remaja</p>
@@ -173,7 +143,7 @@
     <!-- Bottom Navigation -->
     <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 p-3 z-50">
         <div class="flex justify-around items-center max-w-lg mx-auto">
-            <a href="index.html" data-page="home" class="nav-button flex flex-col items-center text-gray-500 text-xs font-medium">
+            <a href="index.html" data-page="home" class="nav-button active flex flex-col items-center text-gray-500 text-xs font-medium">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 </svg>
@@ -211,7 +181,15 @@
         </div>
     </div>
 
-    <script>
+    <!-- Import User Stats System (handles realtime updates) -->
+    <script type="module" src="user-stats.js"></script>
+    
+    <script type="module">
+        import { auth } from './firebase-init.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+        import { db } from './firebase-init.js';
+
         function setActiveNav() {
             const currentPage = window.location.pathname.split('/').pop();
             let pageKey = 'home';
@@ -229,75 +207,13 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            setActiveNav();
-            trackUserLogin();
-            initializeAuth();
-        });
-
-        function trackUserLogin() {
-            try {
-                const today = new Date().toDateString();
-                let loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
-                
-                if (!loginDates.includes(today)) {
-                    loginDates.push(today);
-                    localStorage.setItem('userLoginDates', JSON.stringify(loginDates));
-                    console.log('✅ Login tracked for:', today);
-                    console.log('📊 Total active days:', loginDates.length);
-                }
-                
-                updateActiveDaysDisplay();
-            } catch (error) {
-                console.error('❌ Error tracking login:', error);
-            }
-        }
-
-        function updateActiveDaysDisplay() {
-            try {
-                const loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
-                const activeDaysElements = document.querySelectorAll('[data-stat="active-days"]');
-                activeDaysElements.forEach(el => {
-                    if (el) {
-                        el.textContent = loginDates.length;
-                    }
-                });
-            } catch (error) {
-                console.error('❌ Error updating active days display:', error);
-            }
-        }
-
-        let authService;
-
-        async function initializeAuth() {
-            try {
-                const { AuthService } = await import('./auth-service.js');
-                authService = new AuthService();
-                
-                const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
-                const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-                const { auth, db } = await import('./firebase-init.js');
-                
-                onAuthStateChanged(auth, async (user) => {
-                    await updateUserProfile(user);
-                });
-                
-            } catch (error) {
-                console.error('Error initializing auth:', error);
-                updateUserProfile(null);
-            }
-        }
-
         async function updateUserProfile(user) {
             try {
                 if (user) {
-                    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-                    const { db } = await import('./firebase-init.js');
-                    
                     let userData = {
                         uid: user.uid,
                         email: user.email,
-                        displayName: user.displayName || user.email,
+                        displayName: user.displayName || user.email?.split('@')[0] || 'User',
                         photoURL: user.photoURL,
                         role: 'user'
                     };
@@ -308,123 +224,62 @@
                             const firestoreData = userDoc.data();
                             userData = {
                                 ...userData,
-                                displayName: firestoreData.displayName || `${firestoreData.firstName} ${firestoreData.lastName}` || userData.displayName,
+                                displayName: firestoreData.displayName || 
+                                        (firestoreData.firstName && firestoreData.lastName ? 
+                                            `${firestoreData.firstName} ${firestoreData.lastName}` : 
+                                            userData.displayName),
                                 role: firestoreData.role || 'user',
-                                profession: firestoreData.profession,
-                                institution: firestoreData.institution
+                                profession: firestoreData.profession || 'Pendidik'
                             };
+                        } else {
+                            userData.profession = 'Pendidik';
                         }
                     } catch (firestoreError) {
-                        console.log('Could not fetch Firestore data, using basic auth data');
+                        console.log('Could not fetch Firestore data:', firestoreError);
+                        userData.profession = 'Pendidik';
                     }
                     
-                    document.getElementById('user-name').textContent = userData.displayName || 'User';
-                    document.getElementById('user-email').textContent = userData.email || 'No email';
-                    document.getElementById('user-role').textContent = userData.role || 'user';
-                    
-                    if (userData.profession) {
-                        const profession = userData.profession
-                            .split(' ')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(' ');
-                        document.getElementById('user-profession').textContent = profession;
-                    } else {
-                        document.getElementById('user-profession').textContent = 'Pendidik';
-                    }
+                    document.getElementById('user-name').textContent = userData.displayName;
+                    document.getElementById('user-email').textContent = userData.email;
+                    document.getElementById('user-role').textContent = userData.role;
+                
+                    const profession = userData.profession
+                        ? userData.profession.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                        : 'Pendidik';
+                    document.getElementById('user-profession').textContent = profession;
 
-                    
                     const avatar = document.getElementById('user-avatar');
-                    if (userData.photoURL) {
-                        avatar.innerHTML = `<img src="${userData.photoURL}" alt="Profile" class="w-full h-full rounded-full object-cover">`;
-                    } else {
-                        const initials = userData.displayName ? 
-                            userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase() : 
-                            '👤';
-                        avatar.textContent = initials.length <= 2 ? initials : '👤';
+                    if (avatar) {
+                        if (userData.photoURL) {
+                            avatar.innerHTML = `<img src="${userData.photoURL}" alt="Profile" class="w-full h-full rounded-full object-cover">`;
+                        } else {
+                            const initials = userData.displayName ? 
+                                userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 
+                                '👤';
+                            avatar.textContent = initials.length <= 2 ? initials : '👤';
+                        }
                     }
+                    
                 } else {
-                    document.getElementById('user-name').textContent = 'Guest';
-                    document.getElementById('user-email').textContent = 'Not logged in';
-                    document.getElementById('user-role').textContent = 'guest';
+                    document.getElementById('user-name').textContent = 'Guest User';
                     document.getElementById('user-profession').textContent = 'Visitor';
+                    document.getElementById('user-email').textContent = 'guest@example.com';
+                    document.getElementById('user-role').textContent = 'guest';
                     document.getElementById('user-avatar').textContent = '👤';
                 }
                 
-                updateQuizStatistics();
-                
             } catch (error) {
                 console.error('Error updating user profile:', error);
-                document.getElementById('user-name').textContent = 'User';
-                document.getElementById('user-email').textContent = 'Error loading';
-                document.getElementById('user-role').textContent = 'user';
-                document.getElementById('user-profession').textContent = 'Pendidik';
             }
         }
 
-        function updateQuizStatistics() {
-            try {
-                const quizHistory = JSON.parse(localStorage.getItem('quizHistory') || '[]');
-                const quizCompletedElement = document.querySelector('[data-stat="quiz-completed"]');
-                if (quizCompletedElement) {
-                    quizCompletedElement.textContent = quizHistory.length;
-                }
-                
-                updateActiveDaysDisplay();
-                updateForumPosts();
-                
-            } catch (error) {
-                console.error('Error updating quiz statistics:', error);
-                const quizCompletedElement = document.querySelector('[data-stat="quiz-completed"]');
-                if (quizCompletedElement) quizCompletedElement.textContent = '0';
-            }
-        }
-
-        function updateForumPosts() {
-            try {
-                const forumPostsElement = document.querySelector('[data-stat="post-forum"]');
-                if (forumPostsElement) {
-                    const forumPosts = localStorage.getItem('userForumPosts') || '0';
-                    forumPostsElement.textContent = forumPosts;
-                }
-            } catch (error) {
-                console.error('Error updating forum posts:', error);
-            }
-        }
-    </script>
-
-    <!-- Import User Stats System -->
-    <script type="module" src="user-stats.js"></script>
-    
-    <!-- Test Logic Script -->
-    <script src="test-logic.js"></script>
-    <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (typeof initializeQuiz !== 'undefined') {
-                initializeQuiz();
-            }
+            setActiveNav();
             
-            const requiredElements = [
-                'results-modal', 'results-content', 'history-tab', 
-                'quiz-history-container', 'view-history-btn'
-            ];
-            
-            requiredElements.forEach(id => {
-                if (!document.getElementById(id)) {
-                    console.error(`Required element with ID '${id}' not found in the DOM`);
-                } else {
-                    console.log(`Element '${id}' found`);
-                }
+            onAuthStateChanged(auth, async (user) => {
+                await updateUserProfile(user);
             });
         });
-        
-        if (typeof initializeQuiz !== 'undefined') window.initializeQuiz = initializeQuiz;
-        if (typeof submitAnswer !== 'undefined') window.submitAnswer = submitAnswer;
-        if (typeof moveToNextQuestion !== 'undefined') window.moveToNextQuestion = moveToNextQuestion;
-        if (typeof moveToPreviousQuestion !== 'undefined') window.moveToPreviousQuestion = moveToPreviousQuestion;
-        if (typeof closeResults !== 'undefined') window.closeResults = closeResults;
-        if (typeof showQuizHistory !== 'undefined') window.showQuizHistory = showQuizHistory;
-        if (typeof showResultsTab !== 'undefined') window.showResultsTab = showResultsTab;
-        if (typeof downloadResults !== 'undefined') window.downloadResults = downloadResults;
     </script>
 </body>
 </html>

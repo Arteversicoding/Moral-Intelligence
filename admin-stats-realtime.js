@@ -1,4 +1,4 @@
-// admin-stats-realtime.js - Real-time Statistics Management
+// admin-stats-realtime.js - Real-time Statistics Management (UPDATED)
 import { db } from './firebase-init.js';
 import { supabase } from './supabase.js';
 import { 
@@ -25,7 +25,7 @@ export function initializeAdminStats() {
     // Start listeners
     setupUsersListener();
     setupMaterialsListener();
-    setupQuizSessionsListener();
+    setupQuizSessionsListener(); // FIXED: Now uses quizResults
     setupSurveyResponsesListener();
     setupForumPostsListener();
 }
@@ -85,12 +85,13 @@ async function updateMaterialCount() {
     }
 }
 
-// 3. Quiz Sessions - Real-time from quizSessions collection
+// 3. Quiz Sessions - FIXED: Now uses quizResults collection
 function setupQuizSessionsListener() {
     try {
-        const quizSessionsRef = collection(db, 'quizSessions');
+        // FIXED: Changed from 'quizSessions' to 'quizResults'
+        const quizResultsRef = collection(db, 'quizResults');
         
-        onSnapshot(quizSessionsRef, (snapshot) => {
+        onSnapshot(quizResultsRef, (snapshot) => {
             const totalSessions = snapshot.size;
             updateStatDisplay('totalQuizSessions', totalSessions);
             console.log('Quiz Sessions:', totalSessions);
@@ -188,7 +189,11 @@ function displaySurveyResponses(snapshot) {
     });
 
     // Sort by timestamp (newest first)
-    responses.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    responses.sort((a, b) => {
+        const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return dateB - dateA;
+    });
 
     container.innerHTML = responses.map(response => `
         <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all">
@@ -206,22 +211,22 @@ function displaySurveyResponses(snapshot) {
                 </button>
             </div>
             
-            <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div class="bg-blue-50 p-3 rounded-lg">
                     <p class="text-xs text-blue-600 font-medium">Perangkat</p>
                     <p class="text-sm font-bold text-blue-800">${response.device || 'N/A'}</p>
                 </div>
                 <div class="bg-green-50 p-3 rounded-lg">
-                    <p class="text-xs text-green-600 font-medium">Frekuensi</p>
-                    <p class="text-sm font-bold text-green-800">${response.frequency || 'N/A'}</p>
+                    <p class="text-xs text-green-600 font-medium">Fitur Favorit</p>
+                    <p class="text-sm font-bold text-green-800">${response.favoriteFeature || 'N/A'}</p>
                 </div>
                 <div class="bg-purple-50 p-3 rounded-lg">
-                    <p class="text-xs text-purple-600 font-medium">Fitur Favorit</p>
-                    <p class="text-sm font-bold text-purple-800">${response.mostUsedFeature || 'N/A'}</p>
+                    <p class="text-xs text-purple-600 font-medium">Tujuan</p>
+                    <p class="text-sm font-bold text-purple-800">${response.purpose || 'N/A'}</p>
                 </div>
                 <div class="bg-orange-50 p-3 rounded-lg">
-                    <p class="text-xs text-orange-600 font-medium">Tujuan</p>
-                    <p class="text-sm font-bold text-orange-800">${response.purpose || 'N/A'}</p>
+                    <p class="text-xs text-orange-600 font-medium">Frekuensi</p>
+                    <p class="text-sm font-bold text-orange-800">${response.frequency || 'N/A'}</p>
                 </div>
             </div>
             
@@ -238,8 +243,8 @@ function displaySurveyResponses(snapshot) {
 
 // Calculate average rating
 function calculateAverageRating(ratings) {
-    if (!ratings) return 'N/A';
-    const values = Object.values(ratings);
+    if (!ratings || typeof ratings !== 'object') return 'N/A';
+    const values = Object.values(ratings).filter(v => typeof v === 'number');
     if (values.length === 0) return 'N/A';
     const sum = values.reduce((a, b) => a + b, 0);
     return (sum / values.length).toFixed(1);
@@ -319,7 +324,7 @@ function showSurveyModal(data) {
                         </div>
                         <div class="bg-purple-50 p-4 rounded-lg">
                             <p class="text-sm text-purple-600 mb-1">Fitur Favorit</p>
-                            <p class="font-bold text-purple-800">${data.mostUsedFeature || 'N/A'}</p>
+                            <p class="font-bold text-purple-800">${data.favoriteFeature || 'N/A'}</p>
                         </div>
                         <div class="bg-orange-50 p-4 rounded-lg">
                             <p class="text-sm text-orange-600 mb-1">Tujuan</p>

@@ -193,7 +193,12 @@
         </div>
     </div>
 
-    <script>
+    <script type="module" src="realtime-tracking.js"></script>
+    <script type="module" src="user-stats.js"></script>
+    
+    <script type="module">
+        import { AuthService } from './auth-service.js';
+
         function setActiveNav() {
             document.querySelectorAll('.nav-button').forEach(button => {
                 if (button.dataset.page === 'profile') {
@@ -203,60 +208,28 @@
                 }
             });
         }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            setActiveNav();
-            trackUserLogin();
-            initializeAuth();
-        });
-
-        function trackUserLogin() {
-            try {
-                const today = new Date().toDateString();
-                let loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
-                
-                if (!loginDates.includes(today)) {
-                    loginDates.push(today);
-                    localStorage.setItem('userLoginDates', JSON.stringify(loginDates));
-                    console.log('Login tracked for:', today);
-                    console.log('Total active days:', loginDates.length);
-                }
-                
-                updateActiveDaysDisplay();
-            } catch (error) {
-                console.error('Error tracking login:', error);
-            }
-        }
-
-        function updateActiveDaysDisplay() {
-            try {
-                const loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
-                const activeDaysElements = document.querySelectorAll('[data-stat="active-days"]');
-                activeDaysElements.forEach(el => {
-                    if (el) el.textContent = loginDates.length;
-                });
-            } catch (error) {
-                console.error('Error updating active days display:', error);
-            }
-        }
 
         async function initializeAuth() {
             try {
                 document.getElementById('loading-overlay').style.display = 'flex';
                 document.getElementById('app-container').style.opacity = '0';
                 document.getElementById('app-container').style.visibility = 'hidden';
-                
+
                 const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
                 const { auth } = await import('./firebase-init.js');
-                
+
                 onAuthStateChanged(auth, async (user) => {
-                    await updateUserProfile(user);
-                    
-                    document.getElementById('loading-overlay').style.display = 'none';
-                    document.getElementById('app-container').style.opacity = '1';
-                    document.getElementById('app-container').style.visibility = 'visible';
+                    try {
+                        await updateUserProfile(user);
+                    } catch (err) {
+                        console.error('Error updating user profile:', err);
+                    } finally {
+                        document.getElementById('loading-overlay').style.display = 'none';
+                        document.getElementById('app-container').style.opacity = '1';
+                        document.getElementById('app-container').style.visibility = 'visible';
+                    }
                 });
-                
+
             } catch (error) {
                 console.error('Error initializing auth:', error);
                 document.getElementById('loading-overlay').style.display = 'none';
@@ -287,7 +260,7 @@
                             userData = {
                                 ...userData,
                                 displayName: firestoreData.displayName || 
-                                           (firestoreData.firstName && firestoreData.lastName ? 
+                                        (firestoreData.firstName && firestoreData.lastName ? 
                                             `${firestoreData.firstName} ${firestoreData.lastName}` : 
                                             userData.displayName),
                                 role: firestoreData.role || 'user',
@@ -305,7 +278,7 @@
                     document.getElementById('user-name').textContent = userData.displayName;
                     document.getElementById('user-email').textContent = userData.email;
                     document.getElementById('user-role').textContent = userData.role;
-                   
+                
                     const profession = userData.profession
                         ? userData.profession
                             .split(' ')
@@ -313,7 +286,6 @@
                             .join(' ')
                         : 'Pendidik';
                     document.getElementById('user-profession').textContent = profession;
-
                     
                     const avatars = [
                         document.getElementById('user-avatar'),
@@ -328,7 +300,6 @@
                                 const initials = userData.displayName ? 
                                     userData.displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 
                                     '👤';
-                                // For profile card avatar (with gradient bg), use white text
                                 if (avatar.id === 'user-avatar') {
                                     avatar.className = 'w-14 h-14 bg-white/30 rounded-full flex items-center justify-center text-2xl text-white font-bold';
                                 }
@@ -337,6 +308,8 @@
                         }
                     });
                     
+                    await calculateActiveDays(user);
+                    
                 } else {
                     document.getElementById('user-name').textContent = 'Guest User';
                     document.getElementById('user-profession').textContent = 'Visitor';
@@ -344,10 +317,12 @@
                     document.getElementById('user-role').textContent = 'guest';
                     document.getElementById('user-avatar').textContent = '👤';
                     document.getElementById('header-avatar').textContent = '👤';
+                    
+                    document.querySelectorAll('[data-stat="active-days"]').forEach(el => {
+                        el.textContent = 0;
+                    });
                 }
-
                 updateStatistics();
-                
             } catch (error) {
                 console.error('Error updating user profile:', error);
                 document.getElementById('user-name').textContent = 'Error Loading';
@@ -357,18 +332,52 @@
             }
         }
 
+        async function calculateActiveDays(user) {
+            try {
+                const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+                const { db } = await import('./firebase-init.js');
+                
+                const userStatsRef = doc(db, 'userStats', user.uid);
+                const statsDoc = await getDoc(userStatsRef);
+                
+                let firstLoginDate;
+                if (statsDoc.exists()) {
+                    const data = statsDoc.data();
+                    if (data.firstLoginDate) {
+                        firstLoginDate = data.firstLoginDate.toDate();
+                    } else {
+                        firstLoginDate = new Date(user.metadata.creationTime);
+                    }
+                } else {
+                    firstLoginDate = new Date(user.metadata.creationTime);
+                }
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                firstLoginDate.setHours(0, 0, 0, 0);
+                
+                const diffTime = today - firstLoginDate;
+                const activeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                document.querySelectorAll('[data-stat="active-days"]').forEach(el => {
+                    el.textContent = activeDays;
+                });
+                
+            } catch (error) {
+                console.error('Error calculating active days:', error);
+                document.querySelectorAll('[data-stat="active-days"]').forEach(el => {
+                    el.textContent = 0;
+                });
+            }
+        }
+
+
         function updateStatistics() {
             try {
                 const quizHistory = JSON.parse(localStorage.getItem('quizHistory') || '[]');
                 const quizElements = document.querySelectorAll('[data-stat="quiz-completed"]');
                 quizElements.forEach(el => {
                     if (el) el.textContent = quizHistory.length;
-                });
-                
-                const loginDates = JSON.parse(localStorage.getItem('userLoginDates') || '[]');
-                const activeDaysElements = document.querySelectorAll('[data-stat="active-days"]');
-                activeDaysElements.forEach(el => {
-                    if (el) el.textContent = loginDates.length;
                 });
                 
                 const forumPosts = localStorage.getItem('userForumPosts') || '0';
@@ -381,14 +390,14 @@
                 console.error('Error updating statistics:', error);
             }
         }
-    </script>
-    
-    <script type="module" src="user-stats.js"></script>
-    
-    <script type="module">
-        import { AuthService } from './auth-service.js';
 
+        // Main execution block
         document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav();
+            initializeActivityTracking(); // From realtime-tracking.js
+            initializeAuth();
+
+            // Logout button logic
             const logoutButton = document.getElementById('logout-button');
             if (logoutButton) {
                 logoutButton.addEventListener('click', async () => {
