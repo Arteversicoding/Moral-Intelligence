@@ -169,7 +169,7 @@
         // Redirect if already logged in
         authService.waitForAuthInit().then(user => {
             if (user) {
-                window.location.href = 'index.html';
+                window.location.href = '../../index.html';
             }
         });
 
@@ -194,13 +194,8 @@
             setLoadingState(true, 'registerButton');
             try {
                 await authService.register(userData);
-                // Check if user has admin role and redirect accordingly
-                const currentUser = authService.getCurrentUser();
-                if (currentUser && currentUser.role === 'admin') {
-                    window.location.href = 'admin-dashboard.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
+                // Redirect to index.html after successful registration
+                window.location.href = '../../index.html';
             } catch (error) {
                 showError(error.message);
             } finally {
@@ -213,13 +208,8 @@
             setLoadingState(true, 'registerWithGoogleButton');
             try {
                 await authService.loginWithGoogle();
-                // Check if user has admin role and redirect accordingly
-                const currentUser = authService.getCurrentUser();
-                if (currentUser && currentUser.role === 'admin') {
-                    window.location.href = 'admin-dashboard.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
+                // Redirect to index.html after successful Google registration
+                window.location.href = '../../index.html';
             } catch (error) {
                 showError(error.message + ' - Anda dapat mendaftar menggunakan email dan password di atas.');
                 // Show manual registration form more prominently when Google fails

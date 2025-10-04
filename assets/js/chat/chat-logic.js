@@ -256,18 +256,26 @@ async function handleChatInteraction(prompt, context = null) {
 // Persistence
 // =============================
 function persistMessage(msg, role) {
-  try {
-    const local = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-    local.push({ message: msg, role, timestamp: new Date().toISOString() });
-    localStorage.setItem('chatHistory', JSON.stringify(local));
-  } catch (e) { console.warn('local save failed', e); }
-
-  try {
-    if (typeof saveChatToFirestore === 'function') {
-      const p = saveChatToFirestore(msg, role);
-      if (p?.catch) p.catch(err => console.error('saveChatToFirestore failed', err));
+  // Only save to Firestore if user is logged in
+  if (auth?.currentUser) {
+    try {
+      if (typeof saveChatToFirestore === 'function') {
+        const p = saveChatToFirestore(msg, role);
+        if (p?.catch) p.catch(err => console.error('saveChatToFirestore failed', err));
+      }
+    } catch (e) {
+      console.warn('firestore save error', e);
     }
-  } catch (e) { console.warn('firestore save error', e); }
+  } else {
+    // Only save to localStorage if user is NOT logged in
+    try {
+      const local = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      local.push({ message: msg, role, timestamp: new Date().toISOString() });
+      localStorage.setItem('chatHistory', JSON.stringify(local));
+    } catch (e) {
+      console.warn('local save failed', e);
+    }
+  }
 }
 
 // =============================

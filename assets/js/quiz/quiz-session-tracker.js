@@ -1,8 +1,7 @@
 import { auth } from '../../../config/firebase-init.js';
-import { 
-    saveQuizToFirestore, 
-    getQuizHistoryFromFirestore,
-    syncLocalToFirestore 
+import {
+    saveQuizResultToFirestore,
+    getQuizHistoryFromFirestore
 } from './quiz-firestore-service.js';
 
 let isFirestoreReady = false;
@@ -37,11 +36,8 @@ async function syncQuizHistory() {
     }
     
     syncInProgress = true;
-    
+
     try {
-        // Sync localStorage to Firestore
-        await syncLocalToFirestore();
-        
         // Load history from Firestore
         const firestoreHistory = await getQuizHistoryFromFirestore(10);
         
@@ -107,7 +103,7 @@ export async function saveQuizResult(resultsData) {
         
         // Save to Firestore if user is logged in
         if (isFirestoreReady && auth.currentUser) {
-            const firestoreId = await saveQuizToFirestore(resultsData);
+            const firestoreId = await saveQuizResultToFirestore(resultsData);
             
             if (firestoreId) {
                 // Update local entry with Firestore ID

@@ -17,7 +17,6 @@
         .stat-pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
-    <script type="module" src="auth-guard.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
     
@@ -27,7 +26,7 @@
         <div class="max-w-7xl mx-auto px-4 relative z-10">
             <div class="flex justify-between items-center py-6">
                 <div class="flex items-center space-x-4">
-                    <a href="index.html" class="text-2xl font-bold text-white flex items-center">
+                    <a href="../../index.html" class="text-2xl font-bold text-white flex items-center">
                         <i class="fas fa-brain mr-3 text-3xl"></i>
                         <span class="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
                             Moral Intelligence
@@ -38,7 +37,7 @@
                     </span>
                 </div>
                 <div class="flex items-center space-x-6">
-                    <a href="index.html" class="text-white/90 hover:text-white transition-all">
+                    <a href="../../index.html" class="text-white/90 hover:text-white transition-all">
                         <i class="fas fa-home mr-2"></i>Beranda
                     </a>
                     <a href="admin-quiz-dashboard.html" class="text-white/90 hover:text-white transition-all">
@@ -135,12 +134,16 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Skor Quiz</h3>
-                <canvas id="score-distribution-chart" height="300"></canvas>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="score-distribution-chart"></canvas>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Rata-rata per Aspek</h3>
-                <canvas id="aspect-average-chart" height="300"></canvas>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="aspect-average-chart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -256,44 +259,223 @@
     <div id="notification" class="fixed top-6 right-6 px-8 py-4 rounded-2xl shadow-2xl z-50 opacity-0 transform translate-y-4 transition-all duration-500 backdrop-blur-sm border border-white/20"></div>
 
     <script type="module">
-        // import { supabase } from './supabase.js'; // Disabled - no supabase config
-        import { db } from '../../config/firebase-init.js';
-        import { collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { supabase } from '../../config/supabase-init.js'; // ✅ ENABLED
+        import { db, auth } from '../../config/firebase-init.js';
+        import { deleteDoc, collection, onSnapshot, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getQuizAnalytics } from '../../assets/js/quiz/quiz-firestore-service.js';
+        import { uploadFile, getAllMateri, deleteMateri } from '../../assets/services/materiService.js';
         
         let scoreChart = null;
         let aspectChart = null;
-        
+
+        window.deleteSurveyResponse = async function (id) {
+          if (!confirm('Yakin ingin menghapus response ini?')) return;
+
+          try {
+            await deleteDoc(doc(db, 'survey_responses', id));
+            showNotification('âœ… Response berhasil dihapus', 3000);
+
+            // refresh list
+            if (typeof loadSurveyResponses === 'function') {
+              await loadSurveyResponses();
+            }
+          } catch (err) {
+            console.error('âŒ Gagal menghapus response:', err);
+            showNotification(`Gagal hapus response: ${err.message}`, 4000);
+          }
+        };
+
+        /* === Helper Notif === */
+        function showNotification(message, duration = 3000) {
+          const notif = document.getElementById('notification');
+          notif.innerHTML = message;
+          notif.className = 'fixed top-6 right-6 px-8 py-4 rounded-2xl shadow-2xl z-50 bg-white/90 border border-gray-200 text-gray-800 font-semibold opacity-100 translate-y-0 transition-all duration-500';
+          setTimeout(() => { notif.classList.add('opacity-0','translate-y-4'); }, duration);
+        }
+
+        /* === Helper getPublicUrl === */
+        async function getPublicUrl(fileName) {
+          const { data } = supabase.storage.from('Mobile-Intelligence').getPublicUrl(`materi/${fileName}`);
+          return data.publicUrl;
+        }
+
+        /* === Load Materials Count === */
+        async function loadMaterialsCount() {
+          try {
+            const { data: files, error } = await supabase.storage.from('Mobile-Intelligence').list('materi', {
+              limit: 1000
+            });
+
+            if (!error && files) {
+              const actualFiles = files.filter(f =>
+                f.id &&
+                !f.name.startsWith('.') &&
+                f.name !== '.emptyFolderPlaceholder'
+              );
+              updateStat('totalMaterials', actualFiles.length);
+            }
+          } catch (err) {
+            console.error('Error loading materials count:', err);
+          }
+        }
+
+        /* === Load Materi === */
+        async function loadMateriList() {
+          const container = document.getElementById('materi-list');
+          container.innerHTML = `<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i><p>Memuat materi...</p></div>`;
+          try {
+            console.log('📂 Loading materi from Supabase Storage...');
+            const { data: files, error } = await supabase.storage.from('Mobile-Intelligence').list('materi', {
+              limit: 100,
+              sortBy: { column: 'created_at', order: 'desc' }
+            });
+
+            if (error) {
+              console.error('❌ Error loading files:', error);
+              throw error;
+            }
+
+            console.log('📦 Files loaded:', files);
+
+            // Filter out folders and placeholder files
+            const actualFiles = files.filter(f =>
+              f.id &&
+              !f.name.startsWith('.') &&
+              f.name !== '.emptyFolderPlaceholder'
+            );
+
+            console.log('✅ Filtered files:', actualFiles);
+
+            if (!actualFiles || actualFiles.length === 0) {
+              container.innerHTML = `<p class="text-center text-gray-500">Belum ada materi. Upload materi pertama kamu!</p>`;
+              return;
+            }
+
+            container.innerHTML = actualFiles.map(f => {
+              const fileSizeKB = f.metadata?.size ? (f.metadata.size / 1024).toFixed(1) : '0';
+              const publicUrl = supabase.storage.from('Mobile-Intelligence').getPublicUrl(`materi/${f.name}`).data.publicUrl;
+
+              return `
+                <div class="bg-white rounded-xl shadow-md p-4 flex justify-between items-center hover:shadow-lg transition-shadow">
+                  <div>
+                    <p class="font-bold text-gray-800">${f.name}</p>
+                    <p class="text-sm text-gray-500">${fileSizeKB} KB</p>
+                    <p class="text-xs text-gray-400">${f.created_at ? new Date(f.created_at).toLocaleDateString('id-ID') : ''}</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <a href="${publicUrl}" target="_blank" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                      <i class="fas fa-eye mr-1"></i>Lihat
+                    </a>
+                    <button onclick="deleteMateri('${f.name}')" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                      <i class="fas fa-trash mr-1"></i>Hapus
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+            console.log(`✅ Displayed ${actualFiles.length} materi files`);
+
+            // Update stat count
+            updateStat('totalMaterials', actualFiles.length);
+
+          } catch (err) {
+            console.error('❌ Load materi gagal:', err);
+            container.innerHTML = `
+              <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                <p class="font-bold">Gagal memuat materi</p>
+                <p class="text-sm">${err.message}</p>
+              </div>
+            `;
+            showNotification('Gagal memuat materi: ' + err.message);
+          }
+        }
+
+        /* === Upload Materi === */
+        document.getElementById('upload-btn').addEventListener('click', async () => {
+          const title = document.getElementById('materi-title').value.trim();
+          const desc = document.getElementById('materi-desc').value.trim();
+          const file = document.getElementById('file-upload').files[0];
+
+          if (!title || !desc || !file) {
+            showNotification('❌ Harap isi semua field!');
+            return;
+          }
+
+          document.getElementById('upload-progress').classList.remove('hidden');
+          document.getElementById('progress-bar').style.width = '0%';
+          document.getElementById('progress-text').textContent = 'Mengunggah: 0%';
+
+          try {
+            // Upload menggunakan materiService
+            await uploadFile(file, {
+              judul: title,
+              deskripsi: desc
+            });
+
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('progress-text').textContent = 'Mengunggah: 100%';
+            showNotification(`✅ ${title} berhasil diunggah!`);
+
+            // Reset form
+            document.getElementById('materi-title').value = '';
+            document.getElementById('materi-desc').value = '';
+            document.getElementById('file-upload').value = '';
+            document.getElementById('file-name').textContent = 'Belum ada file yang dipilih';
+            document.getElementById('upload-progress').classList.add('hidden');
+
+            // Reload list - akan otomatis update
+          } catch (err) {
+            console.error(err);
+            showNotification(`Gagal upload: ${err.message}`);
+            document.getElementById('upload-progress').classList.add('hidden');
+          }
+        });
+
+        /* === Delete Materi === */
+        window.deleteMateri = async function(fileName) {
+          if (!confirm(`Hapus ${fileName}?`)) return;
+          try {
+            const filePath = `materi/${fileName}`;
+            const { error } = await supabase.storage.from('Mobile-Intelligence').remove([filePath]);
+            if (error) throw error;
+            showNotification(`✅ ${fileName} dihapus`);
+            loadMateriList();
+          } catch (err) {
+            console.error(err);
+            showNotification(`Gagal hapus: ${err.message}`);
+          }
+        };
+
+        // === File name preview ===
+        document.getElementById('file-upload').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          document.getElementById('file-name').textContent = file ? file.name : 'Belum ada file yang dipilih';
+        });
+
         /* === Realtime listeners === */
         function setupRealtimeListeners() {
           // Users
           onSnapshot(collection(db, 'userStats'), (snap) =>
             updateStat('totalUsers', snap.size));
-        
+
           // Forum posts
           onSnapshot(collection(db, 'posts'), (snap) =>
             updateStat('totalForumPosts', snap.size));
-        
+
           // Quiz sessions
           onSnapshot(collection(db, 'quizResults'), (snap) =>
             updateStat('totalQuizSessions', snap.size));
-        
+
           // Survey responses
           onSnapshot(collection(db, 'surveyResponses'), (snap) => {
             updateStat('totalSurveyResponses', snap.size);
             displaySurveyResponses(snap);
           });
-        }
-        
-        /* === Material count === */
-        async function updateMaterialCount() {
-          const { data: files, error } = await supabase
-            .storage
-            .from('Mobile-Intelligence')
-            .list('materi');
-          if (error) return updateStat('totalMaterials', 0);
-          const actualFiles = files ? files.filter(f => f.name !== '.emptyFolderPlaceholder') : [];
-          updateStat('totalMaterials', actualFiles.length);
+
+          // Materials - load from Supabase Storage instead
+          loadMaterialsCount();
         }
         
         /* === Helper update === */
@@ -334,10 +516,17 @@
                     <p class="text-sm text-gray-500">${r.userEmail||'No email'}</p>
                     <p class="text-xs text-gray-400 mt-1">${r.timestamp?new Date(r.timestamp).toLocaleString('id-ID'):'No date'}</p>
                   </div>
-                  <button onclick="viewSurveyDetail('${r.id}')"
-                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                    <i class="fas fa-eye mr-2"></i>Detail
-                  </button>
+                  <div class="flex gap-2">
+                    <button onclick="viewSurveyDetail('${r.id}')"
+                      class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                      <i class="fas fa-eye mr-2"></i>Detail
+                    </button>
+
+                    <button onclick="deleteSurveyResponse('${r.id}')"
+                      class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                      <i class="fas fa-trash mr-2"></i>Hapus
+                    </button>
+                  </div>
                 </div>
         
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -369,7 +558,7 @@
               </div>`;
           }).join('');
         }
-        
+    
         function calculateAverageRating(ratings) {
           if (!ratings || typeof ratings!=='object') return 'N/A';
           const vals=Object.values(ratings).filter(v=>typeof v==='number');
@@ -476,55 +665,179 @@
         
         /* === Chart quiz analytics === */
         async function loadQuizAnalytics(){
-          const analytics=await getQuizAnalytics();
-          if(!analytics)return;
-        
-          const scoreCtx=document.getElementById('score-distribution-chart').getContext('2d');
-          const scoreLabels=Object.keys(analytics.scoreDistribution);
-          const scoreValues=Object.values(analytics.scoreDistribution);
-        
-          if(scoreChart){
-            scoreChart.data.labels=scoreLabels;
-            scoreChart.data.datasets[0].data=scoreValues;
-            scoreChart.update();
-          }else{
-            scoreChart=new Chart(scoreCtx,{
-              type:'bar',
-              data:{
-                labels:scoreLabels,
-                datasets:[{label:'Jumlah Sesi',data:scoreValues,backgroundColor:'#6366f1'}]
-              },
-              options:{responsive:true,animation:false}
-            });
-          }
-        
-          const aspectCtx=document.getElementById('aspect-average-chart').getContext('2d');
-          const aspectLabels=Object.keys(analytics.aspectAverages).map(a=>a.charAt(0).toUpperCase()+a.slice(1));
-          const aspectValues=Object.values(analytics.aspectAverages);
-        
-          if(aspectChart){
-            aspectChart.data.labels=aspectLabels;
-            aspectChart.data.datasets[0].data=aspectValues;
-            aspectChart.update();
-          }else{
-            aspectChart=new Chart(aspectCtx,{
-              type:'radar',
-              data:{
-                labels:aspectLabels,
-                datasets:[{label:'Rata-rata Skor',data:aspectValues,backgroundColor:'rgba(99,102,241,0.2)',borderColor:'#6366f1'}]
-              },
-              options:{animation:false,scales:{r:{suggestedMin:0,suggestedMax:100}}}
-            });
+          try {
+            console.log('📊 Loading quiz analytics...');
+            const analytics = await getQuizAnalytics();
+
+            if (!analytics) {
+              console.warn('⚠️ No analytics data available');
+              return;
+            }
+
+            console.log('✅ Analytics loaded:', analytics);
+
+            const scoreCtx = document.getElementById('score-distribution-chart')?.getContext('2d');
+            if (!scoreCtx) {
+              console.error('❌ Score chart canvas not found');
+              return;
+            }
+
+            const scoreLabels = Object.keys(analytics.scoreDistribution || {});
+            const scoreValues = Object.values(analytics.scoreDistribution || {});
+
+            if (scoreChart) {
+              scoreChart.data.labels = scoreLabels;
+              scoreChart.data.datasets[0].data = scoreValues;
+              scoreChart.update();
+            } else {
+              scoreChart = new Chart(scoreCtx, {
+                type: 'bar',
+                data: {
+                  labels: scoreLabels,
+                  datasets: [{
+                    label: 'Jumlah Sesi',
+                    data: scoreValues,
+                    backgroundColor: '#6366f1',
+                    borderRadius: 8
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  animation: false,
+                  plugins: {
+                    legend: {
+                      display: false
+                    }
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        stepSize: 1
+                      }
+                    }
+                  }
+                }
+              });
+            }
+
+            const aspectCtx = document.getElementById('aspect-average-chart')?.getContext('2d');
+            if (!aspectCtx) {
+              console.error('❌ Aspect chart canvas not found');
+              return;
+            }
+
+            const aspectLabels = Object.keys(analytics.aspectAverages || {}).map(a => a.charAt(0).toUpperCase() + a.slice(1));
+            const aspectValues = Object.values(analytics.aspectAverages || {});
+
+            if (aspectChart) {
+              aspectChart.data.labels = aspectLabels;
+              aspectChart.data.datasets[0].data = aspectValues;
+              aspectChart.update();
+            } else {
+              aspectChart = new Chart(aspectCtx, {
+                type: 'radar',
+                data: {
+                  labels: aspectLabels,
+                  datasets: [{
+                    label: 'Rata-rata Skor',
+                    data: aspectValues,
+                    backgroundColor: 'rgba(99,102,241,0.2)',
+                    borderColor: '#6366f1',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#6366f1'
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  animation: false,
+                  scales: {
+                    r: {
+                      suggestedMin: 0,
+                      suggestedMax: 100,
+                      ticks: {
+                        stepSize: 20
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      display: false
+                    }
+                  }
+                }
+              });
+            }
+
+            console.log('✅ Charts rendered successfully');
+          } catch (error) {
+            console.error('❌ Error loading quiz analytics:', error);
           }
         }
         
+        /* === Logout === */
+        window.logout = async function() {
+          try {
+            await auth.signOut();
+            window.location.href = '../auth/login.html';
+          } catch (error) {
+            console.error('❌ Error logging out:', error);
+            alert('Gagal logout');
+          }
+        };
+
+        /* === Export Surveys to CSV === */
+        window.exportSurveys = async function() {
+          try {
+            const snapshot = await getDocs(collection(db, 'surveyResponses'));
+            if (snapshot.empty) {
+              alert('Tidak ada data survey untuk di-export');
+              return;
+            }
+
+            let csvContent = 'Nama,Email,Tanggal,Device,Fitur Favorit,Tujuan,Frekuensi,Rating Rata-rata\n';
+
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const avgRating = calculateAverageRating(data.ratings);
+              const row = [
+                data.userName || 'Anonymous',
+                data.userEmail || 'No email',
+                data.timestamp ? new Date(data.timestamp).toLocaleString('id-ID') : 'No date',
+                data.device || 'N/A',
+                data.favoriteFeature || 'N/A',
+                data.purpose || 'N/A',
+                data.frequency || 'N/A',
+                avgRating
+              ].map(field => `"${field}"`).join(',');
+              csvContent += row + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `survey_responses_${new Date().getTime()}.csv`;
+            link.click();
+
+            showNotification('✅ Survey berhasil di-export!');
+          } catch (error) {
+            console.error('❌ Error exporting surveys:', error);
+            alert('Gagal export survey: ' + error.message);
+          }
+        };
+
         /* === Init === */
         document.addEventListener('DOMContentLoaded',()=>{
           setupRealtimeListeners();
-          updateMaterialCount();
+          loadMateriList();
           loadQuizAnalytics();
         });
-    </script>            
+    </script>
+    <script type="module" src="../../assets/js/auth/auth-guard.js"></script>
 </body>
 </html>
-

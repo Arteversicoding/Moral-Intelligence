@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function createPostElement(id, post) {
         const postElement = document.createElement('div');
         postElement.className = 'bg-white rounded-2xl p-5 shadow-lg';
-        
+
         const isOwner = currentUser && currentUser.uid === post.authorId;
         const ownerActions = isOwner ? `
             <div class="flex space-x-2 ml-4">
@@ -134,6 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             </div>
         ` : '';
+
+        // Check if current user has liked this post
+        const likedBy = post.likedBy || [];
+        const hasLiked = currentUser && likedBy.includes(currentUser.uid);
+        const likeButtonStyle = hasLiked ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-gray-100';
 
         postElement.innerHTML = `
         <div class="flex items-start space-x-4">
@@ -150,8 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <p id="post-content-${id}" class="text-gray-600 text-sm mb-3">${post.content}</p>
             <div class="flex items-center justify-between text-sm text-gray-500">
                 <div class="flex space-x-4">
-                <button data-id="${id}" class="like-button">👍 ${post.likes || 0}</button>
-                <button data-id="${id}" class="comment-button">💬 ${(post.comments || []).length}</button>
+                <button data-id="${id}" class="like-button px-3 py-1 rounded-lg transition-colors ${likeButtonStyle}">${hasLiked ? '👍' : '👍'} ${post.likes || 0}</button>
+                <button data-id="${id}" class="comment-button px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors">💬 ${(post.comments || []).length}</button>
                 </div>
                 ${post.category ? `<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">${post.category}</span>` : ''}
             </div>
@@ -207,107 +212,200 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    // Like post function
+    async function likePost(postId) {
+        if (!currentUser) {
+            alert('Anda harus login untuk menyukai post.');
+            return;
+        }
+
+        try {
+            const postSnap = await getDocs(collection(db, 'posts'));
+            let targetPost = null;
+
+            postSnap.forEach((docSnap) => {
+                if (docSnap.id === postId) targetPost = { id: docSnap.id, ...docSnap.data() };
+            });
+
+            if (!targetPost) {
+                alert('Post tidak ditemukan!');
+                return;
+            }
+
+            const likedBy = targetPost.likedBy || [];
+            const hasLiked = likedBy.includes(currentUser.uid);
+
+            // Prevent user from liking their own post
+            if (targetPost.authorId === currentUser.uid) {
+                alert('Anda tidak bisa menyukai postingan Anda sendiri!');
+                return;
+            }
+
+            const postRef = doc(db, 'posts', postId);
+
+            // Toggle like - remove if already liked, add if not
+            if (hasLiked) {
+                await updateDoc(postRef, {
+                    likes: increment(-1),
+                    likedBy: likedBy.filter(uid => uid !== currentUser.uid)
+                });
+            } else {
+                await updateDoc(postRef, {
+                    likes: increment(1),
+                    likedBy: arrayUnion(currentUser.uid)
+                });
+            }
+
+            fetchPosts(); // Refresh display
+        } catch (error) {
+            console.error("Error liking post: ", error);
+            alert('Gagal menyukai post!');
+        }
+    }
+
     // Handle likes and comments
     forumThreads.addEventListener('click', async (e) => {
-
-        
-        // Like post function
-        async function likePost(postId) {
-            if (!currentUser) {
-              alert('Anda harus login untuk menyukai post.');
-              return;
-            }
-          
-            try {
-              const postRef = doc(db, 'posts', postId);
-              const postSnap = await getDocs(collection(db, 'posts'));
-              let targetPost = null;
-          
-              postSnap.forEach((docSnap) => {
-                if (docSnap.id === postId) targetPost = { id: docSnap.id, ...docSnap.data() };
-              });
-          
-              if (!targetPost) return;
-          
-              const likedBy = targetPost.likedBy || [];
-              const hasLiked = likedBy.includes(currentUser.uid);
-          
-              // Toggle like
-              await updateDoc(postRef, {
-                likes: increment(hasLiked ? -1 : 1),
-                likedBy: hasLiked
-                  ? likedBy.filter(uid => uid !== currentUser.uid)
-                  : [...likedBy, currentUser.uid]
-              });
-          
-              fetchPosts(); // Refresh tampilan
-            } catch (error) {
-              console.error("Error liking post: ", error);
-            }
-        }
-          
-
-        if (e.target.classList.contains('like-button')) {
-            const postId = e.target.dataset.id;
-            likePost(postId);
+        // Like button
+        if (e.target.classList.contains('like-button') || e.target.closest('.like-button')) {
+            const button = e.target.classList.contains('like-button') ? e.target : e.target.closest('.like-button');
+            const postId = button.dataset.id;
+            await likePost(postId);
         }
 
-        if (e.target.classList.contains('comment-button')) {
-            const postId = e.target.dataset.id;
+        // Comment button - toggle comments section
+        if (e.target.classList.contains('comment-button') || e.target.closest('.comment-button')) {
+            const button = e.target.classList.contains('comment-button') ? e.target : e.target.closest('.comment-button');
+            const postId = button.dataset.id;
             const commentsSection = document.getElementById(`comments-section-${postId}`);
             commentsSection.classList.toggle('hidden');
         }
+
+        // Reply button - toggle reply form
+        if (e.target.classList.contains('reply-comment-button') || e.target.closest('.reply-comment-button')) {
+            const button = e.target.classList.contains('reply-comment-button') ? e.target : e.target.closest('.reply-comment-button');
+            const postId = button.dataset.postId;
+            const commentIndex = button.dataset.commentIndex;
+            const replyForm = document.getElementById(`reply-form-${postId}-${commentIndex}`);
+            replyForm.classList.toggle('hidden');
+        }
+
+        // Send reply
+        if (e.target.classList.contains('send-reply') || e.target.closest('.send-reply')) {
+            e.preventDefault();
+            const button = e.target.classList.contains('send-reply') ? e.target : e.target.closest('.send-reply');
+            const postId = button.dataset.postId;
+            const commentIndex = parseInt(button.dataset.commentIndex);
+            await sendReply(postId, commentIndex);
+        }
     });
 
-    forumThreads.addEventListener('submit', async (e) => {
-        // Reply button toggle
-    if (e.target.classList.contains('reply-comment-button')) {
-        const postId = e.target.dataset.postId;
-        const commentIndex = e.target.dataset.commentIndex;
-        const replyForm = document.getElementById(`reply-form-${postId}-${commentIndex}`);
-        replyForm.classList.toggle('hidden');
-    }
-    
-    // Send reply
-    if (e.target.classList.contains('send-reply')) {
-        const postId = e.target.dataset.postId;
-        const commentIndex = parseInt(e.target.dataset.commentIndex);
+    // Send reply function
+    async function sendReply(postId, commentIndex) {
+        if (!currentUser) {
+            alert('Anda harus login untuk membalas komentar.');
+            return;
+        }
+
         const replyForm = document.getElementById(`reply-form-${postId}-${commentIndex}`);
         const input = replyForm.querySelector('.reply-input');
         const replyText = input.value.trim();
-        if (!replyText) return;
-    
+
+        if (!replyText) {
+            alert('Balasan tidak boleh kosong!');
+            return;
+        }
+
         try {
-        // ambil post dari firestore
-        const postSnapshot = await getDocs(collection(db, 'posts'));
-        let currentPost = null;
-        postSnapshot.forEach(docSnap => {
-            if (docSnap.id === postId) currentPost = { id: docSnap.id, ...docSnap.data() };
-        });
-    
-        if (!currentPost) return;
-    
-        const comments = currentPost.comments || [];
-        const targetComment = comments[commentIndex];
-    
-        if (!targetComment.replies) targetComment.replies = [];
-    
-        targetComment.replies.push({
-            text: replyText,
-            author: currentUser.displayName || 'Anonymous',
-            authorId: currentUser.uid,
-            createdAt: new Date().toISOString()
-        });
-    
-        const postRef = doc(db, 'posts', postId);
-        await updateDoc(postRef, { comments });
-    
-        input.value = '';
-        fetchPosts();
+            // Get post from Firestore
+            const postSnapshot = await getDocs(collection(db, 'posts'));
+            let currentPost = null;
+            postSnapshot.forEach(docSnap => {
+                if (docSnap.id === postId) currentPost = { id: docSnap.id, ...docSnap.data() };
+            });
+
+            if (!currentPost) {
+                alert('Post tidak ditemukan!');
+                return;
+            }
+
+            const comments = currentPost.comments || [];
+            const targetComment = comments[commentIndex];
+
+            if (!targetComment) {
+                alert('Komentar tidak ditemukan!');
+                return;
+            }
+
+            if (!targetComment.replies) targetComment.replies = [];
+
+            targetComment.replies.push({
+                text: replyText,
+                author: currentUser.displayName || currentUser.email || 'Anonymous',
+                authorId: currentUser.uid,
+                createdAt: new Date().toISOString()
+            });
+
+            const postRef = doc(db, 'posts', postId);
+            await updateDoc(postRef, { comments });
+
+            input.value = '';
+            replyForm.classList.add('hidden');
+            fetchPosts();
         } catch (err) {
-        console.error("Error sending reply:", err);
+            console.error("Error sending reply:", err);
+            alert('Gagal mengirim balasan!');
         }
     }
+
+    // Handle comment form submission
+    forumThreads.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Add comment to post
+        if (e.target.classList.contains('add-comment-form')) {
+            const postId = e.target.dataset.id;
+            const input = e.target.querySelector('input');
+            const commentText = input.value.trim();
+
+            if (!commentText) return;
+
+            if (!currentUser) {
+                alert('Anda harus login untuk berkomentar.');
+                return;
+            }
+
+            try {
+                const postSnapshot = await getDocs(collection(db, 'posts'));
+                let currentPost = null;
+
+                postSnapshot.forEach((docSnap) => {
+                    if (docSnap.id === postId) {
+                        currentPost = { id: docSnap.id, ...docSnap.data() };
+                    }
+                });
+
+                if (!currentPost) return;
+
+                const updatedComments = [...(currentPost.comments || []), {
+                    text: commentText,
+                    author: currentUser.displayName || currentUser.email || 'Anonymous',
+                    authorId: currentUser.uid,
+                    createdAt: new Date().toISOString(),
+                    replies: []
+                }];
+
+                const postRef = doc(db, 'posts', postId);
+                await updateDoc(postRef, {
+                    comments: updatedComments
+                });
+
+                input.value = '';
+                fetchPosts();
+            } catch (error) {
+                console.error("Error adding comment: ", error);
+                alert('Gagal menambahkan komentar!');
+            }
+        }
     });
 
     // Handle edit and delete actions

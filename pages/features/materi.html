@@ -121,16 +121,20 @@
 
     <!-- Material Reader Modal -->
     <div id="material-reader-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <!-- Progress Bar -->
-            <div class="px-4 py-2 bg-gray-50">
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div id="material-progress-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
+        <div class="bg-white rounded-2xl w-full max-w-6xl h-[95vh] flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <h2 id="material-title" class="text-xl font-bold text-gray-800">Loading...</h2>
+                <button onclick="closeMaterialReader()" class="text-gray-500 hover:text-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
-            
+
             <!-- Modal Content -->
-            <div class="flex-1 overflow-y-auto p-6" id="material-content">
+            <div class="flex-1 overflow-hidden p-6" id="material-content">
                 <div class="text-center py-20">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
                     <p class="text-gray-600">Memuat konten...</p>
@@ -213,86 +217,100 @@
             
             // Load content
             loadMaterialContent(materialUrl, materialName);
-            
-            // Setup reading timer
-            startReadingTimer();
         }
-        
+
         function closeMaterialReader() {
             const modal = document.getElementById('material-reader-modal');
             modal.classList.add('hidden');
-            
+
             // Stop tracking using userStats
             if (window.userStats) {
                 window.userStats.stopMaterialTracking();
             }
-            
-            // Stop reading timer
-            stopReadingTimer();
         }
-        
-        let readingTimer = null;
-        let readingStartTime = null;
-        
-        function startReadingTimer() {
-            readingStartTime = Date.now();
-            readingTimer = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - readingStartTime) / 60000); // minutes
-                const readingTimeElement = document.getElementById('reading-time');
-                if (readingTimeElement) {
-                    readingTimeElement.textContent = `${elapsed} min`;
-                }
-            }, 1000);
-        }
-        
-        function stopReadingTimer() {
-            if (readingTimer) {
-                clearInterval(readingTimer);
-                readingTimer = null;
-                readingStartTime = null;
-            }
-        }
+
         
         async function loadMaterialContent(url, materialName) {
             const contentElement = document.getElementById('material-content');
-            
+
             try {
-                // For now, show an embedded viewer or download link
-                contentElement.innerHTML = `
-                    <div class="text-center py-10">
-                        <div class="w-24 h-24 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14,2 14,8 20,8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                                <polyline points="10,9 9,9 8,9"/>
-                            </svg>
+                // Detect file type from URL
+                const fileExtension = url.split('.').pop().toLowerCase();
+                const isPDF = fileExtension === 'pdf' || url.includes('.pdf');
+
+                if (isPDF) {
+                    // Embed PDF viewer
+                    contentElement.innerHTML = `
+                        <div class="h-full flex flex-col">
+                            <div class="flex-1 bg-gray-100 rounded-lg overflow-hidden" style="min-height: 600px;">
+                                <iframe
+                                    src="${url}"
+                                    class="w-full h-full"
+                                    style="min-height: 600px; border: none;"
+                                    title="${materialName}">
+                                </iframe>
+                            </div>
+                            <div class="mt-4 flex justify-center gap-3">
+                                <a href="${url}" target="_blank"
+                                   class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                    🔗 Buka di Tab Baru
+                                </a>
+                                <button onclick="downloadMaterial('${url}', '${materialName}')"
+                                        class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                    📥 Unduh
+                                </button>
+                            </div>
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">${materialName}</h3>
-                        <p class="text-gray-600 mb-6">Klik tombol di bawah untuk membuka dan membaca materi.</p>
-                        <div class="space-y-3">
-                            <a href="${url}" target="_blank" 
-                               class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                                📖 Buka Materi
-                            </a>
-                            <br>
-                            <a href="${url}?download" download="${materialName}"
-                               class="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
-                                📥 Unduh Materi
-                            </a>
+                    `;
+                } else if (fileExtension === 'doc' || fileExtension === 'docx' ||
+                           fileExtension === 'ppt' || fileExtension === 'pptx' ||
+                           fileExtension === 'xls' || fileExtension === 'xlsx') {
+                    // Use Google Docs Viewer for Office documents
+                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+                    contentElement.innerHTML = `
+                        <div class="h-full flex flex-col">
+                            <div class="flex-1 bg-gray-100 rounded-lg overflow-hidden" style="min-height: 600px;">
+                                <iframe
+                                    src="${viewerUrl}"
+                                    class="w-full h-full"
+                                    style="min-height: 600px; border: none;"
+                                    title="${materialName}">
+                                </iframe>
+                            </div>
+                            <div class="mt-4 flex justify-center gap-3">
+                                <a href="${url}" target="_blank"
+                                   class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                    🔗 Buka di Tab Baru
+                                </a>
+                                <button onclick="downloadMaterial('${url}', '${materialName}')"
+                                        class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                    📥 Unduh
+                                </button>
+                            </div>
                         </div>
-                        <div class="mt-8 p-4 bg-yellow-50 rounded-lg">
-                            <p class="text-sm text-yellow-800">
-                                <strong>💡 Tips:</strong> Baca materi hingga selesai untuk mendapatkan tracking progress yang akurat!
-                            </p>
+                    `;
+                } else {
+                    // For other file types, show download option
+                    contentElement.innerHTML = `
+                        <div class="text-center py-10">
+                            <div class="w-24 h-24 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">${materialName}</h3>
+                            <p class="text-gray-600 mb-6">File ini tidak dapat ditampilkan di browser. Silakan unduh untuk membukanya.</p>
+                            <div class="space-y-3">
+                                <button onclick="downloadMaterial('${url}', '${materialName}')"
+                                        class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                    📥 Unduh Materi
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                
-                // Simulate reading progress for demo
-                simulateReadingProgress();
-                
+                    `;
+                }
+
             } catch (error) {
                 console.error('Error loading material content:', error);
                 contentElement.innerHTML = `
@@ -304,31 +322,6 @@
             }
         }
         
-        function simulateReadingProgress() {
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 10;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(progressInterval);
-                    
-                    // Mark as completed using userStats
-                    if (window.userStats) {
-                        window.userStats.forceCompleteMaterial();
-                    }
-                }
-                
-                // Update progress bar
-                const progressBar = document.getElementById('material-progress-bar');
-                const progressText = document.getElementById('reading-progress-text');
-                if (progressBar) {
-                    progressBar.style.width = `${progress}%`;
-                }
-                if (progressText) {
-                    progressText.textContent = `${Math.round(progress)}% selesai`;
-                }
-            }, 2000);
-        }
         
         // Make functions global
         window.openMaterialReader = openMaterialReader;
@@ -351,132 +344,171 @@
             setInterval(updateCompletionRate, 1000);
         });
     </script>
-
-    <script type="module">
-        // import { supabase } from './supabase.js'; // Disabled - no supabase config
-        const supabase = null; // Placeholder
-      
-        async function loadMateri() {
-            console.log("🔥 Mulai ambil daftar file dari bucket Mobile-Intelligence...");
-      
-            const { data, error } = await supabase
-                .storage
-                .from('Mobile-Intelligence')
-                .list('materi', { limit: 100 });
-      
-            if (error) {
-                console.error("❌ Gagal ambil file:", error.message);
-                return;
-            }
-      
-            console.log("✅ Daftar file dari bucket:", data);
+        <script type="module">
+            import { getAllMateri } from '../../assets/services/materiService.js';
             
-            // Filter out empty folder placeholders and invalid files
-            const validFiles = data.filter(file => {
-                // Skip empty folder placeholders (usually named .emptyFolderPlaceholder)
-                if (file.name === '.emptyFolderPlaceholder' || file.name.startsWith('.')) {
-                    return false;
-                }
+            async function loadMateri() {
+                console.log("🔥 Memuat daftar materi dari Supabase...");
                 
-                // Skip files with size 0 (empty placeholders)
-                if (file.metadata && file.metadata.size === 0) {
-                    return false;
-                }
-                
-                // Only include actual files (not directories)
-                return file.name && file.name.includes('.');
-            });
-      
-            const materiList = document.getElementById('materials-list');
-            materiList.innerHTML = '';
-            
-            // Update materials count with valid files only
-            const materialsCount = document.getElementById('materials-count');
-            if (materialsCount) {
-                materialsCount.textContent = `${validFiles.length} materi`;
-            }
-            
-            // Show empty state if no valid files
-            if (validFiles.length === 0) {
-                materiList.innerHTML = `
-                    <div class="col-span-full text-center py-20">
-                        <div class="w-24 h-24 mx-auto mb-6 text-gray-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Tidak ada materi tersedia</h3>
-                        <p class="text-sm text-gray-500">Materi sedang disiapkan dan akan segera tersedia.</p>
-                    </div>
-                `;
-                return;
-            }
-      
-            for (const file of validFiles) {
-                console.log("📄 File ditemukan:", file.name);
-      
-                const { data: { publicUrl } } = supabase
-                    .storage
-                    .from('Mobile-Intelligence')
-                    .getPublicUrl(`materi/${file.name}`);
-
-                console.log("🌐 Public URL:", publicUrl);
-
-                // Get file extension for appropriate icon
-                const fileExt = file.name.split('.').pop().toLowerCase();
-                let fileIcon = '📘'; // default
-                
-                switch(fileExt) {
-                    case 'pdf':
-                        fileIcon = '📕';
-                        break;
-                    case 'doc':
-                    case 'docx':
-                        fileIcon = '📄';
-                        break;
-                    case 'ppt':
-                    case 'pptx':
-                        fileIcon = '📊';
-                        break;
-                    case 'mp4':
-                    case 'avi':
-                    case 'mov':
-                        fileIcon = '🎥';
-                        break;
-                    default:
-                        fileIcon = '📘';
-                }
-
-                const div = document.createElement('div');
-                const downloadUrl = `${publicUrl}?download=${encodeURIComponent(file.name)}&response-content-disposition=attachment`;
-                div.className = "material-card bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300";
-                div.innerHTML = `
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-                            ${fileIcon}
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-gray-800 mb-2">${file.name}</h4>
-                            <p class="text-sm text-gray-500 mb-3">Materi pembelajaran moral intelligence</p>
-                            <div class="flex space-x-2">
-                                <button onclick="openMaterialReader('${file.name}', '${file.name}', '${publicUrl}')"
-                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    📖 Baca Materi
-                                </button>
-                                <a href="${downloadUrl}" 
-                                   download="${file.name}"
-                                   class="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
-                                    📥 Unduh
-                                </a>
+                try {
+                    const materials = await getAllMateri();
+                    
+                    const materiList = document.getElementById('materials-list');
+                    materiList.innerHTML = '';
+                    
+                    // Update materials count
+                    const materialsCount = document.getElementById('materials-count');
+                    if (materialsCount) {
+                        materialsCount.textContent = `${materials.length} materi`;
+                    }
+                    
+                    // Show empty state if no materials
+                    if (!materials || materials.length === 0) {
+                        materiList.innerHTML = `
+                            <div class="col-span-full text-center py-12">
+                                <div class="text-gray-400 mb-4">
+                                    <i class="fas fa-folder-open text-6xl"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-700 mb-2">Belum Ada Materi</h3>
+                                <p class="text-gray-500">Admin belum mengupload materi pembelajaran.</p>
                             </div>
+                        `;
+                        return;
+                    }
+                    
+                    console.log(`✅ Berhasil memuat ${materials.length} materi`);
+                    
+                    // Display materials
+                    materials.forEach(material => {
+                        const fileType = material.tipe_file || 'application/octet-stream';
+                        let fileIcon = '<i class="fas fa-file text-xl"></i>';
+
+                        if (fileType.includes('pdf')) {
+                            fileIcon = '<i class="fas fa-file-pdf text-xl"></i>';
+                        } else if (fileType.includes('word') || fileType.includes('document')) {
+                            fileIcon = '<i class="fas fa-file-word text-xl"></i>';
+                        } else if (fileType.includes('powerpoint') || fileType.includes('presentation')) {
+                            fileIcon = '<i class="fas fa-file-powerpoint text-xl"></i>';
+                        } else if (fileType.includes('video')) {
+                            fileIcon = '<i class="fas fa-file-video text-xl"></i>';
+                        } else if (fileType.includes('image')) {
+                            fileIcon = '<i class="fas fa-file-image text-xl"></i>';
+                        }
+
+                        // Extract title from filename (remove timestamp and extension)
+                        const displayName = material.original_name || material.nama_file;
+                        const materialTitle = displayName.replace(/^\d+_/, '').replace(/\.[^/.]+$/, '');
+
+                        const div = document.createElement('div');
+                        div.className = "material-card bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300";
+                        div.innerHTML = `
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                                    ${fileIcon}
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-800 mb-2">${escapeHtml(materialTitle)}</h4>
+                                    <p class="text-sm text-gray-500 mb-3">Materi pembelajaran</p>
+                                    <p class="text-xs text-gray-400 mb-3">
+                                        <i class="fas fa-file"></i> ${escapeHtml(displayName)}
+                                        ${material.ukuran_file ? `• ${formatFileSize(material.ukuran_file)}` : ''}
+                                    </p>
+                                    <div class="flex space-x-2">
+                                        <button onclick="openMaterialReader('${escapeHtml(material.id)}', '${escapeHtml(materialTitle)}', '${material.url_file}')"
+                                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                            📖 Baca Materi
+                                        </button>
+                                        <button onclick="downloadMaterial('${material.url_file}', '${escapeHtml(displayName)}')"
+                                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                                            📥 Unduh
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        materiList.appendChild(div);
+                    });
+                } catch (error) {
+                    console.error("❌ Gagal memuat materi:", error);
+                    const materiList = document.getElementById('materials-list');
+                    materiList.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-red-400 mb-4">
+                                <i class="fas fa-exclamation-circle text-6xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2">Gagal Memuat Materi</h3>
+                            <p class="text-gray-500">${error.message}</p>
                         </div>
-                    </div>
-                `;
-                materiList.appendChild(div);
+                    `;
+                }
             }
-        }
-      
-        document.addEventListener("DOMContentLoaded", loadMateri);
-    </script>      
+            
+            // Helper: Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+            }
+            
+            // Helper: Escape HTML to prevent XSS
+            function escapeHtml(text) {
+                if (!text) return '';
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.toString().replace(/[&<>"']/g, m => map[m]);
+            }
+
+            // Download material function
+            window.downloadMaterial = async function(url, filename) {
+                try {
+                    // Show loading indicator
+                    const btn = event.target;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunduh...';
+                    btn.disabled = true;
+
+                    // Fetch the file as blob
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Gagal mengunduh file');
+
+                    const blob = await response.blob();
+
+                    // Create download link
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // Cleanup
+                    window.URL.revokeObjectURL(downloadUrl);
+                    document.body.removeChild(a);
+
+                    // Restore button
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                } catch (error) {
+                    console.error('Error downloading file:', error);
+                    alert('Gagal mengunduh file: ' + error.message);
+
+                    // Restore button
+                    if (event && event.target) {
+                        event.target.innerHTML = '📥 Unduh';
+                        event.target.disabled = false;
+                    }
+                }
+            };
+
+            document.addEventListener("DOMContentLoaded", loadMateri);
+        </script>
 </body>
 </html>
+   

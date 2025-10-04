@@ -347,10 +347,10 @@
 
                 // Function to sync stats from UserStats
                 function syncStatsFromUserStats() {
-                    // Quiz completed
-                    const quizHistory = JSON.parse(localStorage.getItem('quizHistory') || '[]');
+                    // Quiz completed - directly from UserStats cache
+                    const quizCompletedValue = userStats.statsCache?.quizCompleted || 0;
                     document.querySelectorAll('[data-stat="quiz-completed"]').forEach(el => {
-                        if (el) el.textContent = quizHistory.length;
+                        if (el) el.textContent = quizCompletedValue;
                     });
 
                     // Active days - directly from UserStats cache
@@ -372,6 +372,7 @@
                 // Listen to real-time updates from UserStats
                 window.addEventListener('activeDaysCalculated', syncStatsFromUserStats);
                 window.addEventListener('forumPostsUpdated', syncStatsFromUserStats);
+                window.addEventListener('quizCompletedUpdated', syncStatsFromUserStats);
 
             } catch (error) {
                 console.error('Error updating statistics:', error);
@@ -392,7 +393,7 @@
                         const authService = new AuthService();
                         try {
                             await authService.logout();
-                            window.location.href = 'login.html';
+                            window.location.href = '../auth/login.html';
                         } catch (error) {
                             console.error('Logout error:', error);
                             alert('Gagal logout. Silakan coba lagi.');

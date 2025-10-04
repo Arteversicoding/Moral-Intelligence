@@ -65,7 +65,7 @@ export async function saveQuizResultToFirestore(resultsData) {
 export async function getQuizHistoryFromFirestore(userId = null, limitCount = 10) {
   try {
     const user = userId || auth.currentUser?.uid;
-    
+
     if (!user) {
       console.warn("⚠️ No user ID provided");
       return [];
@@ -74,22 +74,28 @@ export async function getQuizHistoryFromFirestore(userId = null, limitCount = 10
     const q = query(
       collection(db, QUIZ_RESULTS_COLLECTION),
       where('userId', '==', user),
-      orderBy('createdAt', 'desc'),
       limit(limitCount)
     );
 
     const snapshot = await getDocs(q);
-    
-    const history = snapshot.docs.map(doc => ({
+
+    let history = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       // Convert Timestamp to Date string
       date: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().createdAt
     }));
 
+    // Sort by date descending (newest first) in JavaScript
+    history.sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt);
+      const dateB = new Date(b.date || b.createdAt);
+      return dateB - dateA;
+    });
+
     console.log(`✅ Loaded ${history.length} quiz results for user ${user}`);
     return history;
-    
+
   } catch (error) {
     console.error("❌ Error loading quiz history:", error);
     return [];

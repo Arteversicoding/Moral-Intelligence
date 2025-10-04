@@ -1,98 +1,104 @@
-import { supabase } from '../supabase-config';
+import { supabase } from '../../config/supabase-init.js';
+import { db } from '../../config/firebase-init.js';
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const BUCKET_NAME = 'materi';
+const BUCKET_NAME = 'Mobile-Intelligence';
+const FOLDER_PATH = 'materi';
 
 export const uploadFile = async (file, metadata) => {
   try {
-    // 1. Upload file to storage
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `${BUCKET_NAME}/${fileName}`;
+    const fileName = `${Date.now()}_${file.name}`;
+    const filePath = `${FOLDER_PATH}/${fileName}`;
 
+    // Upload file ke Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
-    // 2. Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    // Ambil public URL
+    const { data: publicData } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(filePath);
 
-    // 3. Save metadata to database
-    const { data, error } = await supabase
-      .from('materi')
-      .insert([
-        { 
-          judul: metadata.judul,
-          deskripsi: metadata.deskripsi,
-          nama_file: file.name,
-          url_file: publicUrl,
-          tipe_file: file.type,
-          ukuran_file: file.size
-        }
-      ])
-      .select();
+    // Simpan metadata ke Firestore
+    const docRef = await addDoc(collection(db, 'materi'), {
+      nama_file: fileName,
+      original_name: file.name,
+      url_file: publicData.publicUrl,
+      judul: metadata.judul || file.name,
+      deskripsi: metadata.deskripsi || '',
+      tipe_file: file.type,
+      ukuran_file: file.size,
+      uploaded_at: serverTimestamp(),
+      created_at: new Date().toISOString()
+    });
 
-    if (error) throw error;
-    return data[0];
+    return {
+      id: docRef.id,
+      fileName,
+      publicUrl: publicData.publicUrl,
+      ...metadata
+    };
   } catch (error) {
-    console.error('Error uploading file:', error);
-    throw error;
-  }
-};
-
-export const updateMateri = async (id, updates) => {
-  try {
-    const { data, error } = await supabase
-      .from('materi')
-      .update(updates)
-      .eq('id', id)
-      .select();
-
-    if (error) throw error;
-    return data[0];
-  } catch (error) {
-    console.error('Error updating materi:', error);
-    throw error;
-  }
-};
-
-export const deleteMateri = async (id, filePath) => {
-  try {
-    // 1. Delete file from storage
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([filePath]);
-
-    if (storageError) throw storageError;
-
-    // 2. Delete record from database
-    const { error } = await supabase
-      .from('materi')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error deleting materi:', error);
+    console.error('❌ Error uploading file:', error);
     throw error;
   }
 };
 
 export const getAllMateri = async () => {
   try {
-    const { data, error } = await supabase
-      .from('materi')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Import additional Firestore functions
+    const { query, orderBy, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
-    if (error) throw error;
-    return data;
+    // Load from Firestore
+    const q = query(collection(db, 'materi'), orderBy('created_at', 'desc'));
+    const snapshot = await getDocs(q);
+
+    const materials = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      materials.push({
+        id: doc.id,
+        nama_file: data.nama_file,
+        original_name: data.original_name,
+        url_file: data.url_file,
+        judul: data.judul,
+        deskripsi: data.deskripsi,
+        tipe_file: data.tipe_file,
+        ukuran_file: data.ukuran_file,
+        uploaded_at: data.uploaded_at || data.created_at
+      });
+    });
+
+    return materials;
   } catch (error) {
-    console.error('Error fetching materi:', error);
+    console.error('❌ Error fetching materials:', error);
+    throw error;
+  }
+};
+
+export const deleteMateri = async (materiId, fileName) => {
+  try {
+    // Import deleteDoc
+    const { deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+
+    const filePath = `${FOLDER_PATH}/${fileName}`;
+
+    // Hapus dari Storage
+    const { error: storageError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove([filePath]);
+
+    if (storageError) throw storageError;
+
+    // Hapus dari Firestore
+    await deleteDoc(doc(db, 'materi', materiId));
+
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting material:', error);
     throw error;
   }
 };

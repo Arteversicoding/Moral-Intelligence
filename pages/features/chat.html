@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz & Chat AI - Moral Intelligence</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com https://generativelanguage.googleapis.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://generativelanguage.googleapis.com https://content-firebaseappcheck.googleapis.com http://127.0.0.1:* http://localhost:*; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com https://generativelanguage.googleapis.com https://esm.run; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://generativelanguage.googleapis.com https://content-firebaseappcheck.googleapis.com http://127.0.0.1:* http://localhost:*; frame-src 'self'; worker-src 'self' blob:; manifest-src 'self';">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -155,7 +155,48 @@
             </div>
 
             <div class="flex-grow overflow-hidden">
-                
+
+                <!-- Welcome Modal -->
+                <div id="welcome-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in">
+                        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6 text-white">
+                            <div class="flex items-center gap-3 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <h2 class="text-2xl font-bold">Selamat Datang!</h2>
+                            </div>
+                            <p class="text-indigo-100 text-sm">Tes Moral Intelligence</p>
+                        </div>
+
+                        <div class="p-6">
+                            <div class="space-y-4 text-gray-700 leading-relaxed">
+                                <p class="text-base">
+                                    Tes ini dirancang untuk mengukur <span class="font-semibold text-indigo-600">7 aspek kecerdasan moral</span> kamu.
+                                </p>
+
+                                <div class="bg-indigo-50 rounded-lg p-4 border-l-4 border-indigo-500">
+                                    <p class="text-sm">
+                                        📝 Kamu akan diberikan beberapa pertanyaan uraian<br>
+                                        ⚡ Setelah menjawab, soal berikutnya akan muncul secara otomatis<br>
+                                        💭 Silakan jawab dengan jujur dan senyaman mungkin
+                                    </p>
+                                </div>
+
+                                <p class="text-sm text-gray-600">
+                                    Di akhir tes, kamu akan mendapatkan <span class="font-semibold">skor total, kategori, dan profil moral intelligence lengkap</span>.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-b-2xl p-6 flex justify-end">
+                            <button onclick="closeWelcomeModal()" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                                Mulai Tes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="quiz-section">
                     <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
                         <div class="flex justify-between items-center mb-2">
@@ -356,11 +397,16 @@
             <a href="./profil.html" class="nav-button flex flex-col items-center space-y-1 text-gray-500 hover:text-indigo-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-xs font-medium">Profil</span></a>
         </div>
     </div>
-    <script type="module" src="../../assets/js/chat/chat-logic.js"></script>
-    <script type="module" src="../../assets/js/chat/chat-firestore-service.js"></script>
+    <script type="module">
+    import { setupChatListeners } from '../../assets/js/chat/chat-logic.js';
+    document.addEventListener('DOMContentLoaded', () => {
+        setupChatListeners();
+    });
+    </script>
     <!-- Di index.html dan profil.html -->
     <script type="module" src="../../assets/js/core/user-stats.js"></script>
     <!-- Di chat.html (halaman quiz) -->
     <script type="module" src="../../assets/js/quiz/quiz-firestore-service.js"></script>
+    <script type="module" src="../../assets/js/quiz/test-logic.js"></script>
 </body>
 </html>

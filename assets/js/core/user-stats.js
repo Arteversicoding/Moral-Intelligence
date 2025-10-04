@@ -218,6 +218,26 @@ class UserStatsManager {
         });
 
         this.unsubscribeListeners.push(unsubscribePosts);
+
+        // Listen to quizResults collection for real-time quiz completed count
+        const quizQuery = query(collection(db, 'quizResults'), where('userId', '==', this.currentUser.uid));
+        const unsubscribeQuiz = onSnapshot(quizQuery, (snapshot) => {
+            const quizCompletedCount = snapshot.size;
+            console.log('[UserStats] Real-time quiz completed update:', quizCompletedCount);
+
+            this.statsCache.quizCompleted = quizCompletedCount;
+
+            // Update display
+            this.updateStatsElementsWithNoCache('[data-stat="quiz-completed"]', quizCompletedCount);
+            this.updateStatsElementsWithNoCache('[data-stat="quiz-selesai"]', quizCompletedCount);
+
+            // Dispatch event for pages to sync
+            window.dispatchEvent(new CustomEvent('quizCompletedUpdated', {
+                detail: { count: quizCompletedCount }
+            }));
+        });
+
+        this.unsubscribeListeners.push(unsubscribeQuiz);
     }
 
     async updateLastActiveDate() {

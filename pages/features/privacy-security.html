@@ -227,32 +227,69 @@
 
         async function handleChangePassword(event) {
             event.preventDefault();
-            
+
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmNewPassword').value;
-            
+
             if (newPassword !== confirmPassword) {
                 showNotification('Password baru tidak cocok', 'error');
                 return;
             }
-            
+
             if (newPassword.length < 8) {
                 showNotification('Password baru minimal 8 karakter', 'error');
                 return;
             }
-            
+
             setLoadingState(true, 'savePasswordBtn');
-            
+
             try {
-                // Firebase password change logic would go here
-                // For now, simulate API call
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                showNotification('Password berhasil diubah', 'success');
+                // Import Firebase auth functions
+                const { auth } = await import('../../config/firebase-init.js');
+                const {
+                    EmailAuthProvider,
+                    reauthenticateWithCredential,
+                    updatePassword
+                } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+
+                const user = auth.currentUser;
+
+                if (!user || !user.email) {
+                    showNotification('User tidak ditemukan atau login dengan provider lain', 'error');
+                    return;
+                }
+
+                // Re-authenticate user with current password
+                const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+                try {
+                    await reauthenticateWithCredential(user, credential);
+                } catch (reauthError) {
+                    console.error('Re-authentication failed:', reauthError);
+                    showNotification('Password lama salah!', 'error');
+                    setLoadingState(false, 'savePasswordBtn');
+                    return;
+                }
+
+                // Update to new password
+                await updatePassword(user, newPassword);
+
+                showNotification('Password berhasil diubah!', 'success');
                 closeChangePasswordModal();
             } catch (error) {
-                showNotification('Gagal mengubah password', 'error');
+                console.error('Error changing password:', error);
+
+                // Handle specific error codes
+                if (error.code === 'auth/wrong-password') {
+                    showNotification('Password lama salah!', 'error');
+                } else if (error.code === 'auth/weak-password') {
+                    showNotification('Password baru terlalu lemah!', 'error');
+                } else if (error.code === 'auth/requires-recent-login') {
+                    showNotification('Silakan login ulang untuk mengubah password', 'error');
+                } else {
+                    showNotification('Gagal mengubah password: ' + error.message, 'error');
+                }
             } finally {
                 setLoadingState(false, 'savePasswordBtn');
             }

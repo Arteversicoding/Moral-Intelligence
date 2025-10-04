@@ -155,11 +155,14 @@ export class AuthService {
         const userDoc = await getDoc(doc(db, "users", user.uid));
 
         // Update first login date if not exists
+        // Update first login date if not exists (non-blocking)
         if (userDoc.exists()) {
             const userData = userDoc.data();
             if (!userData.firstLoginDate) {
-                await updateDoc(doc(db, "users", user.uid), {
+                updateDoc(doc(db, "users", user.uid), {
                     firstLoginDate: new Date().toISOString()
+                }).catch(err => {
+                    console.warn('⚠️ Skip update firstLoginDate (quota exceeded)');
                 });
             }
         }
