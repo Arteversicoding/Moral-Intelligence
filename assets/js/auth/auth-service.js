@@ -13,7 +13,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { app, auth } from "../../../config/firebase-init.js";
-// import { showNotification } from "../../../config/config.js";
 
 // Temporary fallback function
 function showNotification(message, type = 'info') {
@@ -96,7 +95,6 @@ export class AuthService {
             }
         } catch (error) {
             console.error('Redirect result error:', error);
-            showNotification('❌ Login Google gagal: ' + error.message, 'error');
         }
     }
 
@@ -169,18 +167,11 @@ export class AuthService {
 
         showNotification("✅ Login berhasil! Selamat datang 👋", "success");
         setTimeout(() => window.location.href = "../../index.html", 1000);
-    
+
         return user;
       } catch (error) {
         console.error("Login error details:", error.code, error.message);
-    
-        if (error.code === "auth/invalid-credential") {
-          showNotification("❌ Kredensial tidak valid. Periksa email & password Anda.", "error");
-        } else if (error.code === "permission-denied") {
-          showNotification("🚫 Akses Firestore ditolak. Periksa rules Firestore Anda.", "error");
-        } else {
-          showNotification(`⚠️ ${error.message}`, "error");
-        }
+        // Tidak menampilkan notifikasi error, hanya throw error
         throw error;
       }
     }
@@ -197,11 +188,10 @@ export class AuthService {
                 console.log('Popup blocked or failed, trying redirect...', popupError);
                 
                 // If popup fails, use redirect
-                if (popupError.code === 'auth/popup-blocked' || 
+                if (popupError.code === 'auth/popup-blocked' ||
                     popupError.code === 'auth/popup-closed-by-user' ||
                     popupError.code === 'auth/internal-error') {
-                    
-                    showNotification('Popup diblokir, menggunakan redirect...', 'info');
+
                     await signInWithRedirect(this.auth, this.provider);
                     return; // Exit here, redirect will handle the rest
                 }
