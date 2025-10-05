@@ -195,18 +195,18 @@ function setupModeToggle() {
 function switchMode(mode) {
     currentMode = mode;
     const body = document.body;
-    
+
     body.classList.remove('quiz-mode', 'chat-mode');
     body.classList.add(`${mode}-mode`);
-    
+
     const headerStatus = document.getElementById('header-status');
     if (headerStatus) {
         headerStatus.textContent = mode === 'quiz' ? 'Mode Quiz' : 'Chat dengan AI';
     }
-    
+
     const quizBtn = document.getElementById('quiz-mode-btn');
     const chatBtn = document.getElementById('chat-mode-btn');
-    
+
     if (quizBtn && chatBtn) {
         if (mode === 'quiz') {
             quizBtn.classList.add('bg-white', 'text-indigo-600');
@@ -218,6 +218,11 @@ function switchMode(mode) {
             chatBtn.classList.remove('text-white', 'hover:bg-white/10');
             quizBtn.classList.remove('bg-white', 'text-indigo-600');
             quizBtn.classList.add('text-white', 'hover:bg-white/10');
+
+            // Reload chat history when switching to chat mode
+            if (typeof window.reloadChatHistoryOnSwitch === 'function') {
+                window.reloadChatHistoryOnSwitch();
+            }
         }
     }
 }

@@ -16,6 +16,9 @@
         .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
         .stat-pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Chart container styling */
+        canvas { max-height: 250px; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
@@ -39,9 +42,6 @@
                 <div class="flex items-center space-x-6">
                     <a href="../../index.html" class="text-white/90 hover:text-white transition-all">
                         <i class="fas fa-home mr-2"></i>Beranda
-                    </a>
-                    <a href="admin-quiz-dashboard.html" class="text-white/90 hover:text-white transition-all">
-                        <i class="fas fa-chart-line mr-2"></i>Quiz Dashboard
                     </a>
                     <button onclick="logout()" class="bg-red-500/90 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all">
                         <i class="fas fa-sign-out-alt mr-2"></i>Logout
@@ -162,7 +162,31 @@
                     <i class="fas fa-download mr-2"></i>Export CSV
                 </button>
             </div>
-            
+
+            <!-- Survey Analytics Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Rating Rata-rata</h3>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="survey-ratings-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Perangkat Pengguna</h3>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="survey-devices-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Fitur Favorit</h3>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="survey-features-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <div id="survey-responses-list" class="space-y-4">
                 <div class="text-center py-12 text-gray-500">
                     <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
@@ -267,6 +291,9 @@
         
         let scoreChart = null;
         let aspectChart = null;
+        let surveyRatingsChart = null;
+        let surveyDevicesChart = null;
+        let surveyFeaturesChart = null;
 
         window.deleteSurveyResponse = async function (id) {
           if (!confirm('Yakin ingin menghapus response ini?')) return;
@@ -486,12 +513,192 @@
           el.classList.add('stat-pulse');
           setTimeout(() => el.classList.remove('stat-pulse'), 2000);
         }
-        
+
+        /* === Update Survey Charts === */
+        function updateSurveyCharts(responses) {
+          if (!responses || responses.length === 0) {
+            // Show empty state for charts
+            ['survey-ratings-chart', 'survey-devices-chart', 'survey-features-chart'].forEach(id => {
+              const canvas = document.getElementById(id);
+              if (canvas) {
+                const parent = canvas.parentElement;
+                parent.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-gray-400 text-sm">Belum ada data</p></div>';
+              }
+            });
+            return;
+          }
+
+          // 1. Calculate average ratings per category
+          const ratingCategories = {
+            textReadability: 'Teks Mudah Dibaca',
+            colorLayout: 'Warna & Layout',
+            attractiveDesign: 'Desain Menarik',
+            crossPlatform: 'Lintas Platform',
+            easeOfUse: 'Kemudahan',
+            chatbotRelevance: 'Chatbot',
+            mediaSupport: 'Media',
+            materialClarity: 'Kejelasan Materi',
+            questionVariety: 'Variasi Soal',
+            learningSupport: 'Dukungan Belajar'
+          };
+
+          const ratingAverages = {};
+          Object.keys(ratingCategories).forEach(key => {
+            const ratings = responses.map(r => r.ratings?.[key]).filter(v => typeof v === 'number');
+            ratingAverages[key] = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+          });
+
+          // 2. Count devices
+          const deviceCounts = {};
+          responses.forEach(r => {
+            const device = r.device || 'Unknown';
+            deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+          });
+
+          // 3. Count favorite features
+          const featureCounts = {};
+          responses.forEach(r => {
+            const feature = r.favoriteFeature || 'Unknown';
+            featureCounts[feature] = (featureCounts[feature] || 0) + 1;
+          });
+
+          // Render charts
+          renderSurveyRatingsChart(ratingCategories, ratingAverages);
+          renderSurveyDevicesChart(deviceCounts);
+          renderSurveyFeaturesChart(featureCounts);
+        }
+
+        function renderSurveyRatingsChart(categories, averages) {
+          const ctx = document.getElementById('survey-ratings-chart');
+          if (!ctx) return;
+
+          const labels = Object.values(categories);
+          const data = Object.keys(categories).map(key => averages[key]);
+
+          if (surveyRatingsChart) {
+            surveyRatingsChart.data.labels = labels;
+            surveyRatingsChart.data.datasets[0].data = data;
+            surveyRatingsChart.update();
+          } else {
+            surveyRatingsChart = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: 'Rating Rata-rata',
+                  data: data,
+                  backgroundColor: 'rgba(249, 115, 22, 0.6)',
+                  borderColor: 'rgba(249, 115, 22, 1)',
+                  borderWidth: 2,
+                  borderRadius: 6
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    max: 5,
+                    ticks: { stepSize: 1 }
+                  },
+                  x: {
+                    ticks: {
+                      font: { size: 10 },
+                      maxRotation: 45,
+                      minRotation: 45
+                    }
+                  }
+                },
+                plugins: {
+                  legend: { display: false }
+                }
+              }
+            });
+          }
+        }
+
+        function renderSurveyDevicesChart(deviceCounts) {
+          const ctx = document.getElementById('survey-devices-chart');
+          if (!ctx) return;
+
+          const labels = Object.keys(deviceCounts);
+          const data = Object.values(deviceCounts);
+          const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+          if (surveyDevicesChart) {
+            surveyDevicesChart.data.labels = labels;
+            surveyDevicesChart.data.datasets[0].data = data;
+            surveyDevicesChart.update();
+          } else {
+            surveyDevicesChart = new Chart(ctx, {
+              type: 'doughnut',
+              data: {
+                labels: labels,
+                datasets: [{
+                  data: data,
+                  backgroundColor: colors.slice(0, labels.length),
+                  borderWidth: 2,
+                  borderColor: '#fff'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 11 } }
+                  }
+                }
+              }
+            });
+          }
+        }
+
+        function renderSurveyFeaturesChart(featureCounts) {
+          const ctx = document.getElementById('survey-features-chart');
+          if (!ctx) return;
+
+          const labels = Object.keys(featureCounts);
+          const data = Object.values(featureCounts);
+          const colors = ['#6366f1', '#14b8a6', '#f97316', '#ec4899', '#84cc16', '#06b6d4'];
+
+          if (surveyFeaturesChart) {
+            surveyFeaturesChart.data.labels = labels;
+            surveyFeaturesChart.data.datasets[0].data = data;
+            surveyFeaturesChart.update();
+          } else {
+            surveyFeaturesChart = new Chart(ctx, {
+              type: 'pie',
+              data: {
+                labels: labels,
+                datasets: [{
+                  data: data,
+                  backgroundColor: colors.slice(0, labels.length),
+                  borderWidth: 2,
+                  borderColor: '#fff'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 11 } }
+                  }
+                }
+              }
+            });
+          }
+        }
+
         /* === Survey list card === */
         function displaySurveyResponses(snapshot) {
           const container = document.getElementById('survey-responses-list');
           if (!container) return;
-        
+
           if (snapshot.empty) {
             container.innerHTML = `
               <div class="text-center py-12 text-gray-500">
@@ -500,11 +707,14 @@
               </div>`;
             return;
           }
-        
+
           const responses = [];
           snapshot.forEach(doc => responses.push({ id: doc.id, ...doc.data() }));
-        
+
           responses.sort((a,b)=> (b.timestamp?new Date(b.timestamp).getTime():0) - (a.timestamp?new Date(a.timestamp).getTime():0));
+
+          // Update survey charts
+          updateSurveyCharts(responses);
         
           container.innerHTML = responses.map(r=>{
             const avgRating = calculateAverageRating(r.ratings);

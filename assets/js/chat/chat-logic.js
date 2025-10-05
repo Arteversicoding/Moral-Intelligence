@@ -113,6 +113,7 @@ export function setupChatListeners() {
     if (!chatContainer) return;
 
     chatContainer.innerHTML = '';
+    chatHistory = []; // Clear in-memory history
     localStorage.removeItem('chatHistory');
 
     if (auth?.currentUser) {
@@ -130,7 +131,75 @@ export function setupChatListeners() {
     addMessageToChat('Riwayat chat telah dihapus. Mulai percakapan baru!', 'ai');
   });
 
+  // Listen for visibility change - reload chat when tab becomes visible
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      const chatContainer = document.getElementById('chat-messages');
+      // Only reload if chat container exists and is visible (in chat mode)
+      if (chatContainer && document.body.classList.contains('chat-mode')) {
+        reloadChatHistory();
+      }
+    }
+  });
+
+  // Listen for page focus - reload chat when window regains focus
+  window.addEventListener('focus', () => {
+    const chatContainer = document.getElementById('chat-messages');
+    if (chatContainer && document.body.classList.contains('chat-mode')) {
+      reloadChatHistory();
+    }
+  });
+
   loadChatHistoryOnStartup();
+}
+
+// =============================
+// Reload chat history
+// =============================
+async function reloadChatHistory() {
+  const chatContainer = document.getElementById('chat-messages');
+  if (!chatContainer) return;
+
+  // Get current messages count
+  const currentMessagesCount = chatContainer.children.length;
+
+  let chats = [];
+  try {
+    if (auth?.currentUser) {
+      chats = await getChatHistoryFromFirestore(200);
+    } else {
+      chats = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+    }
+  } catch (err) {
+    console.error('❌ Gagal reload chat:', err);
+    return;
+  }
+
+  // Only reload if there are new messages or messages are missing
+  if (chats.length !== currentMessagesCount) {
+    console.log('🔄 Reloading chat history...');
+
+    // Clear container
+    chatContainer.innerHTML = '';
+
+    // Sort by time
+    chats.sort((a, b) => _timeValue(a) - _timeValue(b));
+
+    // Rebuild chatHistory for AI context
+    chatHistory = chats.map(c => ({
+      role: c.role === 'user' ? 'user' : 'model',
+      parts: [{ text: c.message }]
+    }));
+
+    // Re-render all messages
+    chats.forEach((c) => {
+      const role = (c.role === 'user') ? 'user' : 'ai';
+      const text = c.message ?? (c.parts ? c.parts.map(p => p.text).join(' ') : '');
+      addMessageToChat(text, role, false, _formatTimestampForBubble(c));
+    });
+
+    scrollToBottom();
+  }
 }
 
 // =============================
@@ -361,6 +430,13 @@ function scrollToBottom() {
     }, 100);
   }
 }
+
+// =============================
+// Reload on mode switch (exposed for test-logic.js)
+// =============================
+window.reloadChatHistoryOnSwitch = async function() {
+  await reloadChatHistory();
+};
 
 // =============================
 // Expose ke window
