@@ -11,6 +11,18 @@
         .nav-button.active { color: #4f46e5; /* Indigo-600 */ }
         .no-scrollbar { scrollbar-width: none; /* Firefox */ }
         .no-scrollbar::-webkit-scrollbar { display: none; /* Safari and Chrome */ }
+
+        /* Fix for comment overflow - ensure text wraps properly */
+        .break-words {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .overflow-wrap-anywhere {
+            overflow-wrap: anywhere;
+        }
     </style>
     <script type="module" src="../../assets/js/auth/auth-guard.js"></script>
 </head>

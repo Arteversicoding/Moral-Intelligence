@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Rotation - Moral Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .log-entry {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-100 p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">🧪 API Key Rotation Tester</h1>
+            <p class="text-gray-600">Test sistem rotasi API key dengan berbagai skenario</p>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Single Request Test -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">📝 Single Request Test</h2>
+                <div class="space-y-3">
+                    <input
+                        type="text"
+                        id="single-prompt"
+                        value="Halo, apa kabar?"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Enter prompt..."
+                    >
+                    <button
+                        onclick="testSingleRequest()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    >
+                        Send Request
+                    </button>
+                </div>
+            </div>
+
+            <!-- Batch Request Test -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">🚀 Batch Request Test</h2>
+                <div class="space-y-3">
+                    <input
+                        type="number"
+                        id="batch-count"
+                        value="5"
+                        min="1"
+                        max="50"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Number of requests"
+                    >
+                    <button
+                        onclick="testBatchRequests()"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    >
+                        Send Batch Requests
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation Controls -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">⚙️ Simulation Controls</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button onclick="simulateQuotaExceeded()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    Simulate Quota
+                </button>
+                <button onclick="viewCurrentStats()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    View Stats
+                </button>
+                <button onclick="forceRotation()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    Force Rotate
+                </button>
+                <button onclick="clearLogs()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    Clear Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Status -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                    <div class="text-sm opacity-80 mb-1">Current Key</div>
+                    <div id="status-current-key" class="text-2xl font-bold">-</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-80 mb-1">Available Keys</div>
+                    <div id="status-available" class="text-2xl font-bold">-</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-80 mb-1">Total Requests</div>
+                    <div id="status-total" class="text-2xl font-bold">-</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-80 mb-1">Success Rate</div>
+                    <div id="status-success-rate" class="text-2xl font-bold">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Output -->
+        <div class="bg-gray-900 rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-white">📋 Test Logs</h2>
+                <button onclick="clearLogs()" class="text-white/60 hover:text-white text-sm">Clear</button>
+            </div>
+            <div id="log-container" class="space-y-2 max-h-96 overflow-y-auto font-mono text-sm">
+                <div class="text-gray-400">Waiting for tests...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getChatResponse } from './assets/js/core/gemini-service.js';
+        import { apiKeyManager } from './config/config.js';
+
+        let successCount = 0;
+        let failCount = 0;
+
+        function log(message, type = 'info') {
+            const container = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                rotation: 'text-purple-400'
+            };
+
+            const html = `
+                <div class="log-entry ${colors[type]} border-l-2 border-current pl-3 py-1">
+                    <span class="text-gray-500">[${timestamp}]</span> ${message}
+                </div>
+            `;
+
+            if (container.querySelector('.text-gray-400')) {
+                container.innerHTML = '';
+            }
+
+            container.insertAdjacentHTML('beforeend', html);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateStatus() {
+            const stats = apiKeyManager.getOverallStats();
+            const totalTests = successCount + failCount;
+            const successRate = totalTests > 0 ? ((successCount / totalTests) * 100).toFixed(1) : 0;
+
+            document.getElementById('status-current-key').textContent = stats.currentKey;
+            document.getElementById('status-available').textContent = `${stats.availableKeys}/${stats.totalKeys}`;
+            document.getElementById('status-total').textContent = stats.totalRequests;
+            document.getElementById('status-success-rate').textContent = `${successRate}%`;
+        }
+
+        // Test single request
+        window.testSingleRequest = async function() {
+            const prompt = document.getElementById('single-prompt').value;
+            log(`🚀 Sending request: "${prompt}"`, 'info');
+
+            try {
+                const response = await getChatResponse(prompt);
+                log(`✅ Response received: ${response.substring(0, 100)}...`, 'success');
+                successCount++;
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                failCount++;
+            }
+
+            updateStatus();
+        };
+
+        // Test batch requests
+        window.testBatchRequests = async function() {
+            const count = parseInt(document.getElementById('batch-count').value);
+            log(`🚀 Starting batch test with ${count} requests...`, 'info');
+
+            for (let i = 1; i <= count; i++) {
+                log(`📤 Request ${i}/${count}...`, 'info');
+
+                try {
+                    const response = await getChatResponse(`Test request ${i}`);
+                    log(`✅ Request ${i} successful`, 'success');
+                    successCount++;
+                } catch (error) {
+                    log(`❌ Request ${i} failed: ${error.message}`, 'error');
+                    failCount++;
+                }
+
+                updateStatus();
+
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            log(`✨ Batch test completed! Success: ${successCount}, Failed: ${failCount}`, 'success');
+        };
+
+        // Simulate quota exceeded
+        window.simulateQuotaExceeded = function() {
+            const currentIndex = apiKeyManager.getCurrentKeyIndex();
+            apiKeyManager.keyStats[currentIndex].dailyCount = 1500;
+            apiKeyManager.saveKeyStats();
+            log(`⚠️ Simulated quota exceeded for Key #${currentIndex}`, 'warning');
+            updateStatus();
+        };
+
+        // View current stats
+        window.viewCurrentStats = function() {
+            const stats = apiKeyManager.getOverallStats();
+            log('📊 Current Statistics:', 'info');
+            log(`   Total Keys: ${stats.totalKeys}`, 'info');
+            log(`   Current Key: #${stats.currentKey}`, 'info');
+            log(`   Available Keys: ${stats.availableKeys}`, 'info');
+            log(`   Blocked Keys: ${stats.blockedKeys}`, 'info');
+            log(`   Total Requests: ${stats.totalRequests}/${stats.maxDailyCapacity}`, 'info');
+
+            // Log individual key stats
+            Object.keys(apiKeyManager.keyStats).forEach(keyIndex => {
+                const stat = apiKeyManager.keyStats[keyIndex];
+                const status = stat.isBlocked ? '🚫 BLOCKED' : stat.dailyCount >= 1500 ? '⚠️ FULL' : '✅ OK';
+                log(`   Key #${keyIndex}: ${stat.dailyCount}/1500 requests ${status}`, 'info');
+            });
+        };
+
+        // Force rotation
+        window.forceRotation = function() {
+            const oldKey = apiKeyManager.getCurrentKeyIndex();
+            const rotated = apiKeyManager.rotateToNextKey();
+
+            if (rotated) {
+                const newKey = apiKeyManager.getCurrentKeyIndex();
+                log(`🔄 Rotated from Key #${oldKey} to Key #${newKey}`, 'rotation');
+            } else {
+                log('❌ No available keys to rotate to!', 'error');
+            }
+
+            updateStatus();
+        };
+
+        // Clear logs
+        window.clearLogs = function() {
+            document.getElementById('log-container').innerHTML = '<div class="text-gray-400">Logs cleared...</div>';
+            successCount = 0;
+            failCount = 0;
+            updateStatus();
+        };
+
+        // Initial status update
+        updateStatus();
+        log('✅ Test page loaded successfully', 'success');
+        log('💡 Tip: Try sending multiple requests to see key rotation in action!', 'info');
+    </script>
+</body>
+</html>

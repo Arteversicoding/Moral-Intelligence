@@ -151,8 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${ownerActions}
                 </div>
             </div>
-            <h3 id="post-title-${id}" class="font-semibold text-gray-800 mb-2">${post.title}</h3>
-            <p id="post-content-${id}" class="text-gray-600 text-sm mb-3">${post.content}</p>
+            <h3 id="post-title-${id}" class="font-semibold text-gray-800 mb-2 break-words">${post.title}</h3>
+            <p id="post-content-${id}" class="text-gray-600 text-sm mb-3 break-words overflow-wrap-anywhere">${post.content}</p>
             <div class="flex items-center justify-between text-sm text-gray-500">
                 <div class="flex space-x-4">
                 <button data-id="${id}" class="like-button px-3 py-1 rounded-lg transition-colors ${likeButtonStyle}">${hasLiked ? '👍' : '👍'} ${post.likes || 0}</button>
@@ -192,15 +192,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
         // Render replies
         const repliesHTML = (comment.replies || []).map((reply, i) => `
-          <div class="ml-6 text-gray-600 text-sm border-l-2 pl-2 mt-1">
-            <b>${reply.author}:</b> ${reply.text}
+          <div class="ml-6 text-gray-600 text-sm border-l-2 pl-2 mt-1 break-words overflow-wrap-anywhere">
+            <b>${reply.author}:</b> <span class="break-words">${reply.text}</span>
           </div>
         `).join('');
-      
+
         return `
           <div class="flex flex-col text-sm text-gray-600 space-y-1">
             <div class="flex items-start justify-between">
-              <span id="comment-${postId}-${commentIndex}"><b>${comment.author}:</b> ${comment.text}</span>
+              <span id="comment-${postId}-${commentIndex}" class="break-words overflow-wrap-anywhere flex-1 mr-2"><b>${comment.author}:</b> ${comment.text}</span>
               ${commentActions}
             </div>
             ${repliesHTML}

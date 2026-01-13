@@ -1,5 +1,6 @@
-// chat-logic.js - FINAL
-import { getChatResponse, getResponseWithContext } from '../core/gemini-service.js';
+// chat-logic.js - FINAL (SECURE VERSION)
+// Updated to use secure backend proxy (no API keys exposed!)
+import { getChatResponse, getResponseWithContext } from '../core/gemini-service-secure.js';
 import {
   saveChatToFirestore,
   getChatHistoryFromFirestore,

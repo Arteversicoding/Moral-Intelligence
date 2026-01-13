@@ -5,7 +5,7 @@ import {
     getQuizHistoryFromFirestore,
     deleteQuizResult
 } from './quiz-firestore-service.js';
-import { getChatResponse } from '../core/gemini-service.js';
+import { getChatResponse } from '../core/gemini-service-secure.js';
 
 // === Data Soal & Kata Kunci === (tetap sama seperti sebelumnya)
 const questions = {

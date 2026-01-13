@@ -1,0 +1,168 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function untuk cek admin
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email in [
+               'admin@mi.com',
+               'admin@moralintelligence.com',
+               'superadmin@mi.com',
+               'hanirafg@gmail.com'
+             ];
+    }
+
+    function isOwnerOrAdmin(userId) {
+      return request.auth != null && (
+        isAdmin() ||
+        request.auth.uid == userId
+      );
+    }
+
+    // Users collection - WAJIB ADA untuk Google login
+    match /users/{userId} {
+      allow read: if request.auth != null &&
+                     (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null &&
+                       (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // User Stats
+    match /userStats/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // ✅ Quiz Results (plural) - Admin can read all
+    match /quizResults/{quizId} {
+      // Admin bisa baca semua, atau pemilik quiz
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // User bisa create quiz untuk dirinya sendiri
+      allow create: if request.auth != null &&
+                      request.resource.data.userId == request.auth.uid;
+
+      // Admin atau pemilik bisa delete
+      allow delete: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // Admin atau pemilik bisa update
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    // ✅ Survey Responses (plural) - Admin can read all
+    match /surveyResponses/{responseId} {
+      // Admin bisa baca semua, user bisa baca milik sendiri
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // Authenticated user bisa create survey response
+      allow create: if request.auth != null;
+
+      // Admin bisa update semua, user bisa update milik sendiri
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // ONLY ADMIN can delete survey responses
+      allow delete: if isAdmin();
+    }
+
+    // Forum Posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null &&
+        (request.auth.uid == resource.data.authorId || isAdmin());
+
+      allow update: if request.auth != null && (
+        // Owner can edit title/content
+        (resource.data.authorId == request.auth.uid) ||
+        // Admin can edit all
+        isAdmin() ||
+        // Anyone can update likes (must include their uid in likedBy array)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy'])) ||
+        // Anyone can add comments
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']))
+      );
+    }
+
+    // Materi metadata - anyone can read, authenticated can write
+    match /materi/{materiId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Materials
+    match /materials/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Chat History Rules - ONLY OWNER AND ADMIN
+    match /chatHistory/{chatId} {
+      // Admin bisa baca semua, user bisa baca milik sendiri
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // User yang login bisa create dengan userId == uid sendiri
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
+
+      // Admin atau pemilik bisa update
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // Pemilik data atau admin bisa hapus
+      allow delete: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Quiz History
+    match /quizHistory/{historyId} {
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Admin collections
+    match /admins/{userId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // System stats (untuk dashboard)
+    match /systemStats/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+  }
+}

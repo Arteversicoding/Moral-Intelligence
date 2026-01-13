@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Firestore Data - MoralQ v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .export-card {
+            transition: all 0.3s ease;
+        }
+        .export-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .doc-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .doc-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: #3b82f6;
+        }
+        .field-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .field-row:last-child {
+            border-bottom: none;
+        }
+        .field-label {
+            font-weight: 600;
+            color: #374151;
+            min-width: 150px;
+            flex-shrink: 0;
+        }
+        .field-value {
+            color: #6b7280;
+            flex-grow: 1;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 Export Data Firestore v2</h1>
+            <p class="text-gray-600 mb-6">Export dan lihat data dari collections surveyResponses dan quizResults</p>
+
+            <!-- Auth Status -->
+            <div id="authStatus" class="mb-6 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+                <div class="flex items-center justify-between">
+                    <p class="text-yellow-800">⚠️ Anda belum login. Silakan login terlebih dahulu.</p>
+                    <button onclick="loginWithGoogle()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded">
+                        🔐 Login dengan Google
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Info -->
+            <div id="userInfo" class="hidden mb-6 p-4 rounded-lg bg-green-50 border border-green-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-800 font-semibold">✅ Login sebagai: <span id="userEmail"></span></p>
+                        <p class="text-sm text-green-600">Anda bisa mulai export data sekarang</p>
+                    </div>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div id="status" class="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                <p class="text-blue-800">Login untuk mulai export data...</p>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <button onclick="exportSurveyResponses()" class="export-card bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg">
+                    📝 Export Survey Responses
+                </button>
+                <button onclick="exportQuizResults()" class="export-card bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg">
+                    🎯 Export Quiz Results
+                </button>
+                <button onclick="exportAll()" class="export-card bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg">
+                    📦 Export Semua Data
+                </button>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="hidden flex justify-center items-center py-8">
+                <div class="loading"></div>
+                <span class="ml-4 text-gray-600">Mengambil data dari Firestore...</span>
+            </div>
+
+            <!-- Statistics -->
+            <div id="statistics" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 class="font-semibold text-blue-800 mb-2">📝 Survey Responses</h3>
+                    <p class="text-2xl font-bold text-blue-600" id="surveyCount">0</p>
+                    <p class="text-sm text-gray-600">Total responses</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 class="font-semibold text-green-800 mb-2">🎯 Quiz Results</h3>
+                    <p class="text-2xl font-bold text-green-600" id="quizCount">0</p>
+                    <p class="text-sm text-gray-600">Total results</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Area -->
+        <div id="preview" class="hidden bg-white rounded-lg shadow-lg p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" id="previewTitle">Preview Data</h2>
+                <div class="space-x-2">
+                    <button onclick="downloadJSON()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                        💾 Download JSON
+                    </button>
+                    <button onclick="downloadCSV()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded">
+                        📊 Download CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Toggle -->
+            <div class="mb-4 flex gap-2">
+                <button onclick="switchView('cards')" id="btnViewCards" class="px-4 py-2 bg-blue-600 text-white rounded">
+                    📇 Card View
+                </button>
+                <button onclick="switchView('table')" id="btnViewTable" class="px-4 py-2 bg-gray-200 text-gray-700 rounded">
+                    📊 Table View
+                </button>
+                <button onclick="switchView('json')" id="btnViewJson" class="px-4 py-2 bg-gray-200 text-gray-700 rounded">
+                    💻 JSON View
+                </button>
+            </div>
+
+            <div id="previewContent" class="overflow-auto">
+                <!-- Content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwbrFIX-ywTm5eAOTNIRlbAiBmnOhsRL0",
+            authDomain: "mi-app-8ff5c.firebaseapp.com",
+            projectId: "mi-app-8ff5c",
+            storageBucket: "mi-app-8ff5c.appspot.com",
+            messagingSenderId: "320717032422",
+            appId: "1:320717032422:web:452ebbffb5055f83a02427",
+            measurementId: "G-Q1GV4BGLBR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentData = null;
+        let currentType = null;
+        let currentUser = null;
+        let currentView = 'cards';
+
+        // Login
+        window.loginWithGoogle = async function() {
+            try {
+                showStatus('🔐 Membuka popup login Google...', 'info');
+                const result = await signInWithPopup(auth, provider);
+                console.log('✅ Login berhasil:', result.user.email);
+                showStatus(`✅ Login berhasil sebagai ${result.user.email}`, 'success');
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                showStatus(`❌ Login gagal: ${error.message}`, 'error');
+            }
+        };
+
+        // Logout
+        window.logout = async function() {
+            try {
+                await auth.signOut();
+                currentData = null;
+                currentType = null;
+                document.getElementById('preview').classList.add('hidden');
+                document.getElementById('statistics').classList.add('hidden');
+                showStatus('✅ Logout berhasil', 'success');
+            } catch (error) {
+                console.error('❌ Logout error:', error);
+                showStatus(`❌ Logout gagal: ${error.message}`, 'error');
+            }
+        };
+
+        // Auth observer
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                console.log('✅ User logged in:', user.email);
+                document.getElementById('authStatus').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userEmail').textContent = user.email;
+                showStatus('✅ Anda sudah login. Klik tombol untuk export data.', 'success');
+            } else {
+                console.log('⚠️ User not logged in');
+                document.getElementById('authStatus').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                showStatus('⚠️ Silakan login terlebih dahulu untuk export data.', 'warning');
+            }
+        });
+
+        function checkAuth() {
+            if (!currentUser) {
+                showStatus('❌ Anda harus login terlebih dahulu!', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // Export functions
+        window.exportSurveyResponses = async function() {
+            if (!checkAuth()) return;
+            await exportCollection('surveyResponses', 'Survey Responses');
+        };
+
+        window.exportQuizResults = async function() {
+            if (!checkAuth()) return;
+            await exportCollection('quizResults', 'Quiz Results');
+        };
+
+        window.exportAll = async function() {
+            if (!checkAuth()) return;
+            showStatus('Mengambil semua data...', 'info');
+            showLoading(true);
+
+            try {
+                const surveyData = await fetchCollection('surveyResponses');
+                const quizData = await fetchCollection('quizResults');
+
+                currentData = {
+                    surveyResponses: surveyData,
+                    quizResults: quizData,
+                    exportDate: new Date().toISOString(),
+                    totalRecords: surveyData.length + quizData.length
+                };
+                currentType = 'all';
+
+                document.getElementById('surveyCount').textContent = surveyData.length;
+                document.getElementById('quizCount').textContent = quizData.length;
+                document.getElementById('statistics').classList.remove('hidden');
+
+                displayPreview('Semua Data');
+                showStatus(`✅ Berhasil mengambil ${currentData.totalRecords} data (${surveyData.length} survey + ${quizData.length} quiz)`, 'success');
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        async function exportCollection(collectionName, displayName) {
+            showStatus(`Mengambil data dari ${displayName}...`, 'info');
+            showLoading(true);
+
+            try {
+                const data = await fetchCollection(collectionName);
+                currentData = data;
+                currentType = collectionName;
+
+                if (collectionName === 'surveyResponses') {
+                    document.getElementById('surveyCount').textContent = data.length;
+                } else if (collectionName === 'quizResults') {
+                    document.getElementById('quizCount').textContent = data.length;
+                }
+                document.getElementById('statistics').classList.remove('hidden');
+
+                displayPreview(displayName);
+                showStatus(`✅ Berhasil mengambil ${data.length} data dari ${displayName}`, 'success');
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function fetchCollection(collectionName) {
+            try {
+                console.log(`🔍 Fetching collection: ${collectionName}`);
+                const collectionRef = collection(db, collectionName);
+
+                let snapshot;
+                try {
+                    const q = query(collectionRef, orderBy('timestamp', 'desc'));
+                    snapshot = await getDocs(q);
+                    console.log(`✅ Ordered query successful for ${collectionName}`);
+                } catch (orderError) {
+                    console.warn(`⚠️ Cannot order by timestamp for ${collectionName}, fetching without order:`, orderError.message);
+                    snapshot = await getDocs(collectionRef);
+                }
+
+                const data = [];
+                snapshot.forEach(doc => {
+                    const docData = doc.data();
+                    const convertedData = { id: doc.id };
+
+                    Object.keys(docData).forEach(key => {
+                        const value = docData[key];
+                        if (value && typeof value === 'object' && value.toDate) {
+                            convertedData[key] = value.toDate().toISOString();
+                        } else {
+                            convertedData[key] = value;
+                        }
+                    });
+
+                    data.push(convertedData);
+                });
+
+                console.log(`✅ Fetched ${data.length} documents from ${collectionName}`);
+                console.log('📦 Sample data:', data[0]);
+                return data;
+            } catch (error) {
+                console.error(`❌ Error fetching ${collectionName}:`, error);
+                throw new Error(`Gagal mengambil data dari ${collectionName}: ${error.message}`);
+            }
+        }
+
+        function displayPreview(title) {
+            const previewDiv = document.getElementById('preview');
+            document.getElementById('previewTitle').textContent = `Preview: ${title}`;
+            previewDiv.classList.remove('hidden');
+            renderCurrentView();
+        }
+
+        window.switchView = function(viewType) {
+            currentView = viewType;
+
+            // Update button styles
+            document.getElementById('btnViewCards').className = viewType === 'cards' ?
+                'px-4 py-2 bg-blue-600 text-white rounded' : 'px-4 py-2 bg-gray-200 text-gray-700 rounded';
+            document.getElementById('btnViewTable').className = viewType === 'table' ?
+                'px-4 py-2 bg-blue-600 text-white rounded' : 'px-4 py-2 bg-gray-200 text-gray-700 rounded';
+            document.getElementById('btnViewJson').className = viewType === 'json' ?
+                'px-4 py-2 bg-blue-600 text-white rounded' : 'px-4 py-2 bg-gray-200 text-gray-700 rounded';
+
+            renderCurrentView();
+        };
+
+        function renderCurrentView() {
+            if (!currentData) return;
+
+            const contentDiv = document.getElementById('previewContent');
+
+            if (currentType === 'all') {
+                contentDiv.innerHTML = `
+                    <div class="space-y-8">
+                        <div>
+                            <h3 class="text-xl font-bold text-blue-800 mb-4">📝 Survey Responses (${currentData.surveyResponses.length})</h3>
+                            ${renderData(currentData.surveyResponses, 'survey')}
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-green-800 mb-4">🎯 Quiz Results (${currentData.quizResults.length})</h3>
+                            ${renderData(currentData.quizResults, 'quiz')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                contentDiv.innerHTML = renderData(currentData, currentType);
+            }
+        }
+
+        function renderData(data, type) {
+            if (!data || data.length === 0) {
+                return '<p class="text-gray-500 text-center py-8">Tidak ada data</p>';
+            }
+
+            if (currentView === 'cards') {
+                return renderCardsView(data);
+            } else if (currentView === 'table') {
+                return renderTableView(data);
+            } else {
+                return renderJsonView(data);
+            }
+        }
+
+        function renderCardsView(data) {
+            const maxShow = 20;
+            const dataToShow = data.slice(0, maxShow);
+
+            return `
+                <div class="space-y-4">
+                    ${dataToShow.map((doc, index) => {
+                        const fields = Object.keys(doc);
+                        return `
+                            <div class="doc-card">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h4 class="text-lg font-semibold text-gray-800">Document ${index + 1}</h4>
+                                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${doc.id || 'No ID'}</span>
+                                </div>
+                                <div class="space-y-1">
+                                    ${fields.map(field => {
+                                        if (field === 'id') return '';
+                                        let value = doc[field];
+                                        if (typeof value === 'object' && value !== null) {
+                                            value = JSON.stringify(value, null, 2);
+                                        }
+                                        return `
+                                            <div class="field-row">
+                                                <div class="field-label">${field}:</div>
+                                                <div class="field-value">${value || '-'}</div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                    ${data.length > maxShow ? `
+                        <p class="text-sm text-gray-600 text-center py-4 bg-gray-50 rounded">
+                            Menampilkan ${maxShow} dari ${data.length} data. Download untuk melihat semua.
+                        </p>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderTableView(data) {
+            if (!data || data.length === 0) return '<p class="text-gray-500">Tidak ada data</p>';
+
+            const headers = Object.keys(data[0]);
+            const maxShow = 50;
+            const dataToShow = data.slice(0, maxShow);
+
+            return `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                ${headers.map(h => `<th class="px-4 py-2 border-b text-left text-xs font-semibold text-gray-700">${h}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dataToShow.map(row => `
+                                <tr class="hover:bg-gray-50">
+                                    ${headers.map(h => {
+                                        let value = row[h];
+                                        if (value && typeof value === 'object') {
+                                            value = JSON.stringify(value);
+                                        }
+                                        const escapedValue = String(value || '-').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                        return `<td class="px-4 py-2 border-b text-sm text-gray-600 max-w-xs truncate">${escapedValue}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ${data.length > maxShow ? `
+                        <p class="text-sm text-gray-600 text-center py-4 bg-gray-50">
+                            Menampilkan ${maxShow} dari ${data.length} data. Download untuk melihat semua.
+                        </p>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderJsonView(data) {
+            const maxShow = 10;
+            const dataToShow = data.slice(0, maxShow);
+
+            return `
+                <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-sm">${JSON.stringify(dataToShow, null, 2)}</pre>
+                ${data.length > maxShow ? `
+                    <p class="text-sm text-gray-600 text-center py-4 bg-gray-50 rounded mt-2">
+                        Menampilkan ${maxShow} dari ${data.length} data. Download JSON untuk melihat semua.
+                    </p>
+                ` : ''}
+            `;
+        }
+
+        window.downloadJSON = function() {
+            if (!currentData) {
+                alert('Tidak ada data untuk didownload');
+                return;
+            }
+
+            const dataStr = JSON.stringify(currentData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `moralq-export-${currentType}-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showStatus('✅ File JSON berhasil didownload', 'success');
+        };
+
+        window.downloadCSV = function() {
+            if (!currentData) {
+                alert('Tidak ada data untuk didownload');
+                return;
+            }
+
+            let csv = '';
+
+            if (currentType === 'all') {
+                csv += 'SURVEY RESPONSES\n';
+                csv += convertToCSV(currentData.surveyResponses);
+                csv += '\n\n';
+                csv += 'QUIZ RESULTS\n';
+                csv += convertToCSV(currentData.quizResults);
+            } else {
+                csv = convertToCSV(currentData);
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `moralq-export-${currentType}-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showStatus('✅ File CSV berhasil didownload', 'success');
+        };
+
+        function convertToCSV(data) {
+            if (!data || data.length === 0) return '';
+
+            const headers = Object.keys(data[0]);
+            let csv = headers.join(',') + '\n';
+
+            data.forEach(row => {
+                const values = headers.map(header => {
+                    let value = row[header];
+                    if (value && typeof value === 'object') {
+                        value = JSON.stringify(value).replace(/,/g, ';');
+                    }
+                    const escapedValue = String(value || '').replace(/"/g, '""');
+                    return `"${escapedValue}"`;
+                });
+                csv += values.join(',') + '\n';
+            });
+
+            return csv;
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800'
+            };
+
+            statusDiv.className = `mb-6 p-4 rounded-lg border ${colors[type]}`;
+            statusDiv.innerHTML = `<p>${message}</p>`;
+        }
+
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loading');
+            if (show) {
+                loadingDiv.classList.remove('hidden');
+            } else {
+                loadingDiv.classList.add('hidden');
+            }
+        }
+
+        // Error handlers
+        window.addEventListener('error', (event) => {
+            console.error('❌ Global error:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('❌ Unhandled promise rejection:', event.reason);
+        });
+
+        console.log('✅ Firestore Export Tool v2 ready');
+    </script>
+</body>
+</html>
